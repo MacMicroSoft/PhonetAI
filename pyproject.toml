@@ -6,7 +6,7 @@ authors = ["maksym <maksym.potapchuk5@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = "^3.11.11"
 flask = "^3.1.0"
 flask-jwt-extended = {extras = ["asymmetric-crypto"], version = "^4.7.1"}
 flask-sqlalchemy = "^3.1.1"
