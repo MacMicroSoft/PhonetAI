@@ -16,12 +16,12 @@ class ProductionConfig(Config):
 
 class StagingConfig(Config):
     DEVELOPMENT = True
-    DEBUG = True
+    DEBUG = False
 
 
 class DevelopmentConfig(Config):
     DEVELOPMENT = True
-    DEBUG = True
+    DEBUG = False
 
 
 class TestingConfig(Config):
