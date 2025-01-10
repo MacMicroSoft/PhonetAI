@@ -1,6 +1,9 @@
 from flask import Blueprint, Response, request
 import logging
 
+from .functions.database_orm import save_to_database
+from api.webhook.functions.source import *
+
 logger = logging.getLogger(__name__)
 
 hook_bp = Blueprint(
@@ -10,14 +13,17 @@ hook_bp = Blueprint(
 )
 
 
-@hook_bp.route('/test/', methods=['POST'])
+@hook_bp.route('/como/crm/', methods=['POST'])
 def webhook_from_CRM():
+    print(request)
     try:
         if request.method == 'POST':
             data = request.data
-            print(dir(request))
-            print(data)
-            # parse_hood_data(data)
+            hook_decod = HookDecoder()
+            hook_decod.webhook_decoder(raw_data=data)
+            db_data: dict = hook_decod.table_map()  #Дані для бази даних розбиті на таблиці
+            save_to_database(db_data)
+
             logger.info(
                 "Successfully received data from webhook",
                 extra={
@@ -29,16 +35,15 @@ def webhook_from_CRM():
                 },
             )
             return Response("Data received successfully", status=200)
-
     except Exception as e:
         logger.error(
             "Error processing data from webhook",
             extra={
                 "status_code": "400",
-                "status_message": str(e),
+                "status_message": "BAD REQUEST",
                 "operation_type": "WEBHOOK",
                 "service": "FLASK",
-                "extra": {},
+                "extra": {str(e)},
             },
         )
         return Response("Error processing data", status=400)
