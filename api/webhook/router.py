@@ -1,8 +1,16 @@
+import json
+from cgitb import Hook
+from datetime import datetime
+
 from flask import Blueprint, Response, request
 import logging
 
-from .functions.database_orm import save_to_database
-from api.webhook.functions.source import *
+from sqlalchemy import select
+
+from database import SessionLocal
+from api.webhook.functions.database_orm import save_to_database
+from api.webhook.functions.source import HookDecoder
+from models import Integrations, Leads
 
 logger = logging.getLogger(__name__)
 
@@ -47,3 +55,25 @@ def webhook_from_CRM():
             },
         )
         return Response("Error processing data", status=400)
+
+
+def custom_serializer(obj):
+    """Серіалізатор для об'єктів, які не підтримує JSON"""
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    raise TypeError(f"Type {type(obj)} not serializable")
+
+
+@hook_bp.route('/como/crm/info/', methods=['GET'])
+def webhook_info():
+    db = SessionLocal()
+    if request.method == 'GET':
+        query = db.query(Leads).all()
+
+        data = [
+            {key: (getattr(element, key).isoformat() if isinstance(getattr(element, key), datetime) else getattr(element, key))
+             for key in element.__dict__.keys() if key != '_sa_instance_state'}
+            for element in query
+        ]
+
+        return Response(json.dumps({"data": data}, default=custom_serializer), status=200, mimetype='application/json')
