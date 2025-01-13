@@ -1,24 +1,28 @@
+import hashlib
 import json
-from cgitb import Hook
+import os
 from datetime import datetime
 
+from dotenv import load_dotenv
 from flask import Blueprint, Response, request
 import logging
+import redis
 
 from sqlalchemy import select
-
 from database import SessionLocal
 from api.webhook.functions.database_orm import save_to_database
 from api.webhook.functions.source import HookDecoder
 from models import Integrations, Leads
 
 logger = logging.getLogger(__name__)
-
+load_dotenv()
 hook_bp = Blueprint(
     'hook_bp', __name__,
     template_folder='templates',
     static_folder='static'
 )
+
+redis_client = redis.StrictRedis(host=os.getenv("REDIS_HOST"), port=os.getenv("REDIS_PORT"), db=os.getenv("REDIS_DB"))
 
 
 @hook_bp.route('/como/crm/', methods=['POST'])
@@ -27,9 +31,17 @@ def webhook_from_CRM():
     try:
         if request.method == 'POST':
             data = request.data
+            hash_data = hashlib.sha256(data).hexdigest()
+            REDIS_EXPIRE_TIME = 1800  # 30 minutes
+
+            if redis_client.exists(hash_data):
+                return Response("Duplicate data received, ignoring.", status=200)
+
+            redis_client.set(hash_data, 1, ex=REDIS_EXPIRE_TIME)
+
             hook_decod = HookDecoder()
             hook_decod.webhook_decoder(raw_data=data)
-            db_data: dict = hook_decod.table_map()  #Дані для бази даних розбиті на таблиці
+            db_data: dict = hook_decod.table_map()
             save_to_database(db_data)
 
             logger.info(
@@ -58,7 +70,7 @@ def webhook_from_CRM():
 
 
 def custom_serializer(obj):
-    """Серіалізатор для об'єктів, які не підтримує JSON"""
+    """Serializer for objects that are not supported by JSON."""
     if isinstance(obj, datetime):
         return obj.isoformat()
     raise TypeError(f"Type {type(obj)} not serializable")
@@ -71,7 +83,9 @@ def webhook_info():
         query = db.query(Leads).all()
 
         data = [
-            {key: (getattr(element, key).isoformat() if isinstance(getattr(element, key), datetime) else getattr(element, key))
+            {key: (
+                getattr(element, key).isoformat() if isinstance(getattr(element, key), datetime) else getattr(element,
+                                                                                                              key))
              for key in element.__dict__.keys() if key != '_sa_instance_state'}
             for element in query
         ]
