@@ -14,7 +14,7 @@ from api.webhook.router import hook_bp
 def create_app():
     app = Flask(__name__)
 
-    app.config.from_object("config.DevelopmentConfig")
+    app.config.from_object("config.ProdConfig")
     db.init_app(app)
     Migrate(app, db)
 

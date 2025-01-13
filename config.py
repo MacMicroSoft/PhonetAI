@@ -31,7 +31,6 @@ class TestingConfig(Config):
     TESTING = True
 
 
-class ProductionConfig(Config):
+class ProdConfig(Config):
     DEBUG = False
     TESTING = False
-    SQLALCHEMY_DATABASE_URI = os.environ.get('SQLALCHEMY_DATABASE_URI_DEP')
