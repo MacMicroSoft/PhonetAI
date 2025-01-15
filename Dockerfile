@@ -18,4 +18,4 @@ COPY . /app/
 
 EXPOSE 5000
 
-CMD ["poetry", "run", "gunicorn", "--bind", "0.0.0.0:5000", "--log-level", "info", "app:create_app()"]
+CMD ["poetry", "run", "gunicorn", "--bind", "0.0.0.0:5000", "app:create_app()", "--access-logfile", "-", "--error-logfile", "-"]

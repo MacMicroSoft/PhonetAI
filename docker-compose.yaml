@@ -4,6 +4,12 @@ services:
     container_name: flask-app
     ports:
       - "5000:5000"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
     environment:
       - FLASK_APP=app.py
       - FLASK_ENV=development

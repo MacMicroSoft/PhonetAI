@@ -2,7 +2,6 @@ import hashlib
 import json
 import os
 from datetime import datetime
-
 from dotenv import load_dotenv
 from flask import Blueprint, Response, request
 import logging
@@ -16,24 +15,22 @@ from models import Integrations, Leads
 
 logger = logging.getLogger(__name__)
 load_dotenv()
-hook_bp = Blueprint(
-    'hook_bp', __name__,
-    template_folder='templates',
-    static_folder='static'
-)
+hook_bp = Blueprint('hook_bp', __name__, template_folder='templates', static_folder='static')
 
 redis_client = redis.StrictRedis(host=os.getenv("REDIS_HOST"), port=os.getenv("REDIS_PORT"), db=os.getenv("REDIS_DB"))
 
 
 @hook_bp.route('/como/crm/', methods=['POST'])
 def webhook_from_CRM():
-    logger.info(request, "check_data")
+    logger.info('Received webhook from CRM')
+    logger.info(f'Request data: {request.data}')
+    logger.info(f'Type of request data: {type(request.data)}')
+
     try:
         if request.method == 'POST':
-            data = request.data            	
-
+            data = request.data
             hash_data = hashlib.sha256(data).hexdigest()
-            REDIS_EXPIRE_TIME = 1800  # 30 minutes
+            REDIS_EXPIRE_TIME = 1800
 
             if redis_client.exists(hash_data):
                 return Response("Duplicate data received, ignoring.", status=200)
@@ -42,7 +39,7 @@ def webhook_from_CRM():
 
             hook_decod = HookDecoder()
             hook_decod.webhook_decoder(raw_data=data)
-            db_data: dict = hook_decod.table_map()
+            db_data = hook_decod.table_map()
             save_to_database(db_data)
 
             logger.info(
@@ -57,7 +54,7 @@ def webhook_from_CRM():
             )
             return Response("Data received successfully", status=200)
     except Exception as e:
-        logger.error(
+        logger.info(
             "Error processing data from webhook",
             extra={
                 "status_code": "400",
@@ -87,7 +84,7 @@ def webhook_info():
             {key: (
                 getattr(element, key).isoformat() if isinstance(getattr(element, key), datetime) else getattr(element,
                                                                                                               key))
-             for key in element.__dict__.keys() if key != '_sa_instance_state'}
+                for key in element.__dict__.keys() if key != '_sa_instance_state'}
             for element in query
         ]
 
