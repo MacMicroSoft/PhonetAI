@@ -27,10 +27,11 @@ redis_client = redis.StrictRedis(host=os.getenv("REDIS_HOST"), port=os.getenv("R
 
 @hook_bp.route('/como/crm/', methods=['POST'])
 def webhook_from_CRM():
-    print(request)
+    logger.info(request, "check_data")
     try:
         if request.method == 'POST':
-            data = request.data
+            data = request.data            	
+
             hash_data = hashlib.sha256(data).hexdigest()
             REDIS_EXPIRE_TIME = 1800  # 30 minutes
 
