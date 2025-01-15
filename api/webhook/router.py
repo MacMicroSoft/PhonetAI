@@ -6,12 +6,13 @@ from dotenv import load_dotenv
 from flask import Blueprint, Response, request
 import logging
 import redis
+from flask import jsonify
 
 from sqlalchemy import select
 from database import SessionLocal
 from api.webhook.functions.database_orm import save_to_database
 from api.webhook.functions.source import HookDecoder
-from models import Integrations, Leads
+from models import Integrations, Leads, Manager, Phonet, PhonetLeads
 
 logger = logging.getLogger(__name__)
 load_dotenv()
@@ -75,15 +76,45 @@ def custom_serializer(obj):
 @hook_bp.route('/como/crm/info/', methods=['GET'])
 def webhook_info():
     db = SessionLocal()
-    if request.method == 'GET':
-        query = db.query(Leads).all()
+    try:
+        if request.method == "GET":
+            leads = db.query(Leads).all()
+            managers = db.query(Manager).all()
+            integrations = db.query(Integrations).all()
+            phonet = db.query(Phonet).all()
+            phonet_leads = db.query(PhonetLeads).all()
 
-        data = [
-            {key: (
-                getattr(element, key).isoformat() if isinstance(getattr(element, key), datetime) else getattr(element,
-                                                                                                              key))
-                for key in element.__dict__.keys() if key != '_sa_instance_state'}
-            for element in query
-        ]
+            leads_list = [
+                {key: value for key, value in lead.__dict__.items() if not key.startswith("_")}
+                for lead in leads
+            ]
+            managers_list = [
+                {key: value for key, value in manager.__dict__.items() if not key.startswith("_")}
+                for manager in managers
+            ]
+            integrations_list = [
+                {key: value for key, value in integration.__dict__.items() if not key.startswith("_")}
+                for integration in integrations
+            ]
+            phonet_list = [
+                {key: value for key, value in phone.__dict__.items() if not key.startswith("_")}
+                for phone in phonet
+            ]
+            phonet_leads_list = [
+                {key: value for key, value in phonet_lead.__dict__.items() if not key.startswith("_")}
+                for phonet_lead in phonet_leads
+            ]
 
-        return Response(json.dumps({"data": data}, default=custom_serializer), status=200, mimetype='application/json')
+            response = {
+                "leads": leads_list,
+                "managers": managers_list,
+                "integrations": integrations_list,
+                "phonet": phonet_list,
+                "phonet_leads": phonet_leads_list,
+            }
+
+            return jsonify(response)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        db.close()

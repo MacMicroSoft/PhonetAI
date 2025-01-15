@@ -28,6 +28,18 @@ class Manager(db.Model):
     username = db.Column(db.String, nullable=False)
     type = db.Column(db.Integer, nullable=False)
     leads = db.relationship("Leads", back_populates="manager")
+    def to_dict(self, include_relationships=True):
+        data = {c.name: getattr(self, c.name) for c in self.__table__.columns}
+        if include_relationships:
+            for relationship in self.__mapper__.relationships:
+                related_data = getattr(self, relationship.key)
+                if related_data is not None:
+                    if isinstance(related_data, list):
+                        data[relationship.key] = [item.to_dict(include_relationships=False) for item in related_data]
+                    else:
+                        data[relationship.key] = related_data.to_dict(include_relationships=False)
+        return data
+
 
 
 class Leads(db.Model):
@@ -48,6 +60,19 @@ class Leads(db.Model):
     integration = db.relationship("Integrations", back_populates="leads")
     phonet_leads = db.relationship("PhonetLeads", back_populates="lead")
 
+    def to_dict(self, include_relationships=True):
+        data = {c.name: getattr(self, c.name) for c in self.__table__.columns}
+        if include_relationships:
+            for relationship in self.__mapper__.relationships:
+                related_data = getattr(self, relationship.key)
+                if related_data is not None:
+                    if isinstance(related_data, list):
+                        data[relationship.key] = [item.to_dict(include_relationships=False) for item in related_data]
+                    else:
+                        data[relationship.key] = related_data.to_dict(include_relationships=False)
+        return data
+
+
 
 class Phonet(db.Model):
     __tablename__ = "phonet"
@@ -60,6 +85,18 @@ class Phonet(db.Model):
     call_result = db.Column(db.String)
     phonet_leads = db.relationship("PhonetLeads", back_populates="phonet")
 
+    def to_dict(self, include_relationships=True):
+        data = {c.name: getattr(self, c.name) for c in self.__table__.columns}
+        if include_relationships:
+            for relationship in self.__mapper__.relationships:
+                related_data = getattr(self, relationship.key)
+                if related_data is not None:
+                    if isinstance(related_data, list):
+                        data[relationship.key] = [item.to_dict(include_relationships=False) for item in related_data]
+                    else:
+                        data[relationship.key] = related_data.to_dict(include_relationships=False)
+        return data
+
 
 class PhonetLeads(db.Model):
     __tablename__ = "phonet_leads"
@@ -69,3 +106,15 @@ class PhonetLeads(db.Model):
     last_update = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     phonet = db.relationship("Phonet", back_populates="phonet_leads")
     lead = db.relationship("Leads", back_populates="phonet_leads")
+    def to_dict(self, include_relationships=True):
+        data = {c.name: getattr(self, c.name) for c in self.__table__.columns}
+        if include_relationships:
+            for relationship in self.__mapper__.relationships:
+                related_data = getattr(self, relationship.key)
+                if related_data is not None:
+                    if isinstance(related_data, list):
+                        data[relationship.key] = [item.to_dict(include_relationships=False) for item in related_data]
+                    else:
+                        data[relationship.key] = related_data.to_dict(include_relationships=False)
+        return data
+
