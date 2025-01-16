@@ -11,6 +11,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class Integrations:
     subdomain: Optional[str] = None
@@ -155,7 +156,7 @@ class HookDecoder:
             )),
             "Phonet": {} if isinstance(self.__clear_data.get("text"), str) else asdict(Phonet(
                 unique_uuid=self.__clear_data.get("text", {}).get("UNIQ"),
-                audio_mp3=self.__clear_data.get("LINK"),
+                audio_mp3=self.__clear_data.get("text", {}).get("LINK"),
                 phone_number=self.__clear_data.get("text", {}).get("PHONE").lstrip(),
                 duration=self.__clear_data.get("text", {}).get("DURATION"),
                 call_status=self.__clear_data.get("text", {}).get("call_status"),

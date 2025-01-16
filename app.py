@@ -15,7 +15,7 @@ from api.webhook.router import hook_bp
 
 def create_app():
     app = Flask(__name__)
-
+    print("Hello Github")
     logging.basicConfig(level=logging.INFO)
     app.logger.setLevel(logging.INFO)
     app.logger.info("Info log information")

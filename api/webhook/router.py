@@ -18,23 +18,23 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 hook_bp = Blueprint('hook_bp', __name__, template_folder='templates', static_folder='static')
 
-redis_client = redis.StrictRedis(host=os.getenv("REDIS_HOST"), port=os.getenv("REDIS_PORT"), db=os.getenv("REDIS_DB"))
+# redis_client = redis.StrictRedis(host=os.getenv("REDIS_HOST"), port=os.getenv("REDIS_PORT"), db=os.getenv("REDIS_DB"))
 
 
 @hook_bp.route('/como/crm/', methods=['POST'])
 def webhook_from_CRM():
     try:
         if request.method == 'POST':
-            data = request.get_data()
+            data = request.data
             logger.info(f"Get data as bytes: {str(data)}")
 
             hash_data = hashlib.sha256(data).hexdigest()
-            REDIS_EXPIRE_TIME = 1800
+            # REDIS_EXPIRE_TIME = 1800
 
-            if redis_client.exists(hash_data):
-                return Response("Duplicate data received, ignoring.", status=200)
-
-            redis_client.set(hash_data, 1, ex=REDIS_EXPIRE_TIME)
+            # if redis_client.exists(hash_data):
+            #     return Response("Duplicate data received, ignoring.", status=200)
+            #
+            # redis_client.set(hash_data, 1, ex=REDIS_EXPIRE_TIME)
 
             hook_decod = HookDecoder()
             hook_decod.webhook_decoder(raw_data=data)
