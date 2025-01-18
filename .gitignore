@@ -1,3 +1,4 @@
 .env
 /api/post_request.py
 /venv/
+/AudioDataCRM

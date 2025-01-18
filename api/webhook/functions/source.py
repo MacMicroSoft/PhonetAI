@@ -1,15 +1,39 @@
 from urllib.parse import parse_qs, unquote
 import json
 import re
-from sqlalchemy.orm import relationship, Session
-from pprint import pprint
+from pathlib import Path
 from dataclasses import dataclass, asdict
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Literal
 from datetime import datetime
 from uuid import UUID
 import logging
+import requests
 
 logger = logging.getLogger(__name__)
+
+
+class AudioManager:
+    def __init__(self) -> None:
+        self.__audio_path: Path = Path("./AudioDataCRM")
+
+
+    def download(self, url: str, uniq_uuid: str) -> Path:
+        "url->full url path where are stored audio file\nuniq_uuid->foulder where stored audio and will used like filename"
+        response = requests.get(url)
+        downloaded_path: str = f"{self.__audio_path}/{uniq_uuid}.mp3"
+        with open(downloaded_path, 'wb') as file:
+            file.write(response.content)
+
+            return f"{self.__audio_path}/{uniq_uuid}.mp3"
+
+
+    def delete(self) -> None:
+        self.__audio_path.unlink()
+
+    
+    @property
+    def get_audio_folder(self) -> Path:
+        return self.__audio_path
 
 
 @dataclass
@@ -56,6 +80,12 @@ class Phonet:
 class HookDecoder:
     def __init__(self) -> None:
         self.__clear_data: dict = {}
+        self.__is_phonet: bool = False
+
+    @property
+    def is_phonet(self) -> bool:
+        return self.__is_phonet
+    
 
     def webhook_decoder(self, raw_data: str, return_data: bool = False) -> None | Dict[str, Any]:
         logger.info(
@@ -84,6 +114,8 @@ class HookDecoder:
 
                     self.__clear_data[short_key] = cleaned_value
 
+        self.__is_phonet: bool = False if isinstance(self.__clear_data.get("text"), str) else True
+
         if return_data:
             logger.info(
                 "Successful decode data",
@@ -96,8 +128,21 @@ class HookDecoder:
             )
 
             return self.__clear_data
+        
 
-    def table_map(self) -> Dict[str, Dict[str, Any]]:
+    def integration_data(self) -> tuple[Literal["unique_uuid", "audio_mp3", "element_id", "domain"]] | None:
+        """Якщо Phonet Повертає дані:\nunique_uuid -> Імя файлу.mp3\naudio_mp3 -> путь для завантаження файлу\nelement_id -> ID ліда"""
+        if self.__is_phonet:
+            return (
+                self.__clear_data.get("text", {}).get("UNIQ"),
+                self.__clear_data.get("text", {}).get("LINK"),
+                self.__clear_data.get("element_id"),
+                self.__clear_data.get("self"),
+            )
+        return
+
+
+    def table_map(self, lead_status: str) -> Dict[str, Dict[str, Any]]:
         logger.info(
             "Start parse data",
             extra={
@@ -149,12 +194,12 @@ class HookDecoder:
                 timestamp_x=self.__clear_data.get("timestamp_x"),
                 created_at=datetime.utcfromtimestamp(self.__clear_data.get("created_at")).strftime('%Y-%m-%d %H:%M:%S'),
                 updated_at=datetime.utcfromtimestamp(self.__clear_data.get("updated_at")).strftime('%Y-%m-%d %H:%M:%S'),
-                path=self.__clear_data.get("unknows"),
+                lead_status=lead_status if self.__is_phonet else "",
             )),
             "PhonetLeads": asdict(PhonetLeads(
                 last_update=None,
             )),
-            "Phonet": {} if isinstance(self.__clear_data.get("text"), str) else asdict(Phonet(
+            "Phonet": {} if not self.__is_phonet else asdict(Phonet(
                 unique_uuid=self.__clear_data.get("text", {}).get("UNIQ"),
                 audio_mp3=self.__clear_data.get("text", {}).get("LINK"),
                 phone_number=self.__clear_data.get("text", {}).get("PHONE").lstrip(),
@@ -163,3 +208,63 @@ class HookDecoder:
                 call_result=self.__clear_data.get("text", {}).get("call_result"),
             )),
         }
+
+
+class ApiCRMManager:
+    def __init__(self, base_url: str, access_token: str) -> None:
+        self.__base_url: str = base_url + "/api/v4/"
+        self.__access_token: str = access_token
+        self.__headers = {
+            "Authorization": f"Bearer {self.__access_token}"
+        }
+
+    
+    def refresh_token(self, new_token: str) -> None:
+        """Оновлення токену доступу"""
+        self.__access_token = new_token
+        self.__headers["Authorization"] = f"Bearer {self.__access_token}"
+
+
+    def __request_pack(self, url: str) -> dict:
+        """DRY Method"""
+        try:
+            response = requests.get(url, headers=self.__headers)
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            print(f"Request failed: {e}")
+            return {}
+
+    @property
+    def lead_info(self):
+        """Отримати інформацію про Lead"""
+        def getter(lead_id: int) -> dict:
+            url = f"{self.__base_url}leads/{lead_id}"
+            return self.__request_pack(url)
+        return getter
+
+    @property
+    def pipeline_info(self):
+        """Отримати інформацію про Воронку"""
+        def getter(pipeline_id: int) -> dict:
+            url = f"{self.__base_url}leads/pipelines/{pipeline_id}"
+            return self.__request_pack(url)
+        return getter
+
+    @property
+    def status_info_args(self):
+        """Отримати інформацію про статус у воронці"""
+        def getter(pipeline_id: int, status_id: int) -> dict:
+            url = f"{self.__base_url}leads/pipelines/{pipeline_id}/statuses/{status_id}"
+            return self.__request_pack(url)
+        return getter
+    
+
+    @property
+    def status_info(self):
+        """Отримати інформацію про статус у воронці відразу напряму"""
+        def getter(lead_id: int) -> dict:
+            lead_info: dict = self.lead_info(lead_id)
+            url = f"{self.__base_url}leads/pipelines/{lead_info.get('pipeline_id')}/statuses/{lead_info.get('status_id')}"
+            return self.__request_pack(url)
+        return getter
