@@ -51,6 +51,8 @@ def webhook_from_CRM():
                 audio_manager: AudioManager = AudioManager()
                 audio_path = audio_manager.download(audio_url, audio_filename)
                 print(f"\nAудіо викачане успішно!\nPath: {audio_path}")
+
+                audio_manager.delete(audio_path)
             except:
                 print("\nПомилка з аудіо")
 

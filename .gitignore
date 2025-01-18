@@ -1,4 +1,6 @@
 .env
 /api/post_request.py
 /venv/
-/AudioDataCRM
+/AudioDataCRM/
+**/__pycache__/
+/.idea/

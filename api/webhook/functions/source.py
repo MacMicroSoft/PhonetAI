@@ -20,15 +20,21 @@ class AudioManager:
     def download(self, url: str, uniq_uuid: str) -> Path:
         "url->full url path where are stored audio file\nuniq_uuid->foulder where stored audio and will used like filename"
         response = requests.get(url)
-        downloaded_path: str = f"{self.__audio_path}/{uniq_uuid}.mp3"
+        downloaded_path: Path = Path(f"{self.__audio_path}/{uniq_uuid}.mp3")
         with open(downloaded_path, 'wb') as file:
             file.write(response.content)
 
-            return f"{self.__audio_path}/{uniq_uuid}.mp3"
+            return downloaded_path
 
 
-    def delete(self) -> None:
-        self.__audio_path.unlink()
+    def delete(self, audio_path: Path) -> None:
+        """Видаляє аудіо за його адресою розташування"""
+        try:
+            audio_path.unlink()
+            print("Audio видалене успішно")
+        except:
+            print("Audio видалене або не було заввнтажене")
+
 
     
     @property
