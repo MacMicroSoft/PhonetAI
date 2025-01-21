@@ -1,17 +1,18 @@
-import hashlib
-import json
 import os
+import json
+import redis
+import hashlib
+import logging
+from flask import jsonify
+from sqlalchemy import select
 from datetime import datetime
 from dotenv import load_dotenv
-from flask import Blueprint, Response, request
-import logging
-import redis
-from flask import jsonify
 
-from sqlalchemy import select
+from api.openai.trancription import AssistanceHandlerOpenAI, assistant_start
 from database import SessionLocal
-from api.webhook.functions.database_orm import save_to_database
+from flask import Blueprint, Response, request
 from api.webhook.functions.source import HookDecoder
+from api.webhook.functions.database_orm import save_to_database
 from models import Integrations, Leads, Manager, Phonet, PhonetLeads
 
 logger = logging.getLogger(__name__)
@@ -29,6 +30,7 @@ def webhook_from_CRM():
             logger.info(f"Get data as bytes: {str(data)}")
 
             hash_data = hashlib.sha256(data).hexdigest()
+
             # REDIS_EXPIRE_TIME = 1800
 
             # if redis_client.exists(hash_data):
@@ -39,7 +41,10 @@ def webhook_from_CRM():
             hook_decod = HookDecoder()
             hook_decod.webhook_decoder(raw_data=data)
             db_data = hook_decod.table_map()
+
             save_to_database(db_data)
+
+            assistant_start(file_path="somepath")
 
             logger.info(
                 "Successfully received data from webhook",
