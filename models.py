@@ -28,6 +28,7 @@ class Manager(db.Model):
     username = db.Column(db.String, nullable=False)
     type = db.Column(db.Integer, nullable=False)
     leads = db.relationship("Leads", back_populates="manager")
+    is_permissions = db.Column(db.Boolean, nullable=False, default=False)
 
 
 class Leads(db.Model):
@@ -43,23 +44,10 @@ class Leads(db.Model):
     timestamp_x = db.Column(db.DateTime, nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    path = db.Column(db.String)
+    client_status = db.Column(db.String, nullable=True)
     manager = db.relationship("Manager", back_populates="leads")
     integration = db.relationship("Integrations", back_populates="leads")
     phonet_leads = db.relationship("PhonetLeads", back_populates="lead")
-
-    def to_dict(self, include_relationships=True):
-        data = {c.name: getattr(self, c.name) for c in self.__table__.columns}
-        if include_relationships:
-            for relationship in self.__mapper__.relationships:
-                related_data = getattr(self, relationship.key)
-                if related_data is not None:
-                    if isinstance(related_data, list):
-                        data[relationship.key] = [item.to_dict(include_relationships=False) for item in related_data]
-                    else:
-                        data[relationship.key] = related_data.to_dict(include_relationships=False)
-        return data
-
 
 
 class Phonet(db.Model):
@@ -73,17 +61,14 @@ class Phonet(db.Model):
     call_result = db.Column(db.String)
     phonet_leads = db.relationship("PhonetLeads", back_populates="phonet")
 
-    def to_dict(self, include_relationships=True):
-        data = {c.name: getattr(self, c.name) for c in self.__table__.columns}
-        if include_relationships:
-            for relationship in self.__mapper__.relationships:
-                related_data = getattr(self, relationship.key)
-                if related_data is not None:
-                    if isinstance(related_data, list):
-                        data[relationship.key] = [item.to_dict(include_relationships=False) for item in related_data]
-                    else:
-                        data[relationship.key] = related_data.to_dict(include_relationships=False)
-        return data
+
+class Analyses(db.Model):
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    lead_id = db.Column(db.Integer, db.ForeignKey("leads.id"), nullable=False)
+    audio_text = db.Column(db.String)
+    analysed_text = db.Column(db.String)
+    is_analysed = db.Column(db.Boolean, nullable=False, default=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
 
 class PhonetLeads(db.Model):

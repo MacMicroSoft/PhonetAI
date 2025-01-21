@@ -92,3 +92,7 @@ def save_to_database(data: dict) -> None:
                 "error": str(e),
             },
         )
+
+
+def get_created_lead_id():
+    pass
