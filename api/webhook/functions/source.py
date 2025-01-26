@@ -9,6 +9,7 @@ from uuid import UUID
 import logging
 import requests
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -28,7 +29,7 @@ class AudioManager:
 
 
     def delete(self, audio_path: Path) -> None:
-        """Видаляє аудіо за його адресою розташування"""
+        """Delete audio file"""
         try:
             audio_path.unlink()
             print("Audio видалене успішно")
@@ -87,6 +88,7 @@ class HookDecoder:
     def __init__(self) -> None:
         self.__clear_data: dict = {}
         self.__is_phonet: bool = False
+
 
     @property
     def is_phonet(self) -> bool:
@@ -226,7 +228,7 @@ class ApiCRMManager:
 
     
     def refresh_token(self, new_token: str) -> None:
-        """Оновлення токену доступу"""
+        """Update access token"""
         self.__access_token = new_token
         self.__headers["Authorization"] = f"Bearer {self.__access_token}"
 
@@ -241,25 +243,28 @@ class ApiCRMManager:
             print(f"Request failed: {e}")
             return {}
 
+
     @property
     def lead_info(self):
-        """Отримати інформацію про Lead"""
+        """Get info about Lead"""
         def getter(lead_id: int) -> dict:
             url = f"{self.__base_url}leads/{lead_id}"
             return self.__request_pack(url)
         return getter
 
+
     @property
     def pipeline_info(self):
-        """Отримати інформацію про Воронку"""
+        """Get info about Pipeline"""
         def getter(pipeline_id: int) -> dict:
             url = f"{self.__base_url}leads/pipelines/{pipeline_id}"
             return self.__request_pack(url)
         return getter
 
+
     @property
     def status_info_args(self):
-        """Отримати інформацію про статус у воронці"""
+        """Get statuse info from Pipeline"""
         def getter(pipeline_id: int, status_id: int) -> dict:
             url = f"{self.__base_url}leads/pipelines/{pipeline_id}/statuses/{status_id}"
             return self.__request_pack(url)
@@ -268,9 +273,32 @@ class ApiCRMManager:
 
     @property
     def status_info(self):
-        """Отримати інформацію про статус у воронці відразу напряму"""
+        """Get statuse info"""
         def getter(lead_id: int) -> dict:
             lead_info: dict = self.lead_info(lead_id)
             url = f"{self.__base_url}leads/pipelines/{lead_info.get('pipeline_id')}/statuses/{lead_info.get('status_id')}"
             return self.__request_pack(url)
         return getter
+
+
+    def post_send_data_to_crm(self, lead_id: int, content: str) -> None:
+        if not self.__access_token:
+            return
+        
+        url = f"{self.__base_url}leads/{lead_id}/notes"
+        headers = {
+            "Authorization": f"Bearer {self.__access_token}",
+            "Content-Type": "application/json"
+        }
+        payload = [
+            {"note_type": "common", "params": {"text": content}}
+        ]
+        try:
+            response = requests.post(
+                url,
+                headers=headers,
+                json=payload
+            )
+            response.raise_for_status()
+        except requests.RequestException as error:
+            return
