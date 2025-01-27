@@ -48,9 +48,9 @@ def webhook_from_CRM():
         # print('\n')
         #
         # try:
-        #     crm_manager: ApiCRMManager = ApiCRMManager(url_domain, access_token=ACCESS_TOKEN)
-        #     lead_status_str: str = crm_manager.status_info(lead_id).get('name')
-        #     print(f"Cтатус Ліда: {lead_status_str}")
+        crm_manager: ApiCRMManager = ApiCRMManager(url_domain, access_token=ACCESS_TOKEN)
+        lead_status_str: str = crm_manager.status_info(lead_id).get('name')
+        print(f"Cтатус Ліда: {lead_status_str}")
         # except:
         #     print("\nПомилка в отриманні статусу ліда")
 
@@ -63,11 +63,12 @@ def webhook_from_CRM():
         audio_manager.delete(audio_path)
         # except:
         #     print("\nПомилка з аудіо")
+        print("Start saving lead status")
+        db_data = hook_decod.table_map(lead_status_str)
 
-        # db_data = hook_decod.table_map(lead_status_str)
-        #
-        # json_saved_data = save_to_database(db_data)
-        #
+        print("Save data to database and return")
+        json_saved_data = save_to_database(db_data)
+        print("Here should be assistantg")
         # assistant_start(transcrip_text=transcript_text, crm_data_json=json_saved_data, crm_manager=crm_manager)
 
         logger.info(
