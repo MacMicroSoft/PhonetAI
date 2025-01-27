@@ -139,7 +139,7 @@ class HookDecoder:
                 self.__clear_data.get("element_id"),
                 self.__clear_data.get("self"),
             )
-        return
+        return "CHECKKK123"
 
     def table_map(self, lead_status: str) -> Dict[str, Dict[str, Any]]:
         logger.info(
