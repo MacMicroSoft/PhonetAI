@@ -104,7 +104,7 @@ class AssistanceHandlerOpenAI(AssistantEventHandler):
 client = OpenAI(api_key=os.environ['OPENAI_API_KEY'])
 
 @staticmethod
-def transcriptions(audio_file_mp3_path) -> str:
+def transcriptions(audio_file_mp3_path):
     """
     Use transcription to get text from mp3 for analyse in assistant.
     return transcription text
