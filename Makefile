@@ -5,10 +5,10 @@ FLASK = flask
 
 # Команди для міграцій
 migrate:
-	$(DOCKER_COMPOSE) run $(SERVICE) $(POETRY) run $(FLASK) db upgrade
+	$(DOCKER_COMPOSE) run $(SERVICE) $(python) $(FLASK) db upgrade
 
 makemigrations:
-	$(DOCKER_COMPOSE) run $(SERVICE) $(POETRY) run $(FLASK) db migrate -m "Migrations"
+	$(DOCKER_COMPOSE) run $(SERVICE) $(python) $(FLASK) db migrate -m "Migrations"
 
 # Команди для роботи з Docker
 docker-run:
