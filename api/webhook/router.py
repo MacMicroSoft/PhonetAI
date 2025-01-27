@@ -69,7 +69,7 @@ def webhook_from_CRM():
         print("Save data to database and return")
         json_saved_data = save_to_database(db_data)
         print("Here should be assistantg")
-        # assistant_start(transcrip_text=transcript_text, crm_data_json=json_saved_data, crm_manager=crm_manager)
+        assistant_start(transcrip_text=transcript_text, crm_data_json=json_saved_data, crm_manager=crm_manager)
 
         logger.info(
             "Successfully received data from webhook",
