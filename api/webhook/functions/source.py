@@ -1,4 +1,3 @@
-import os
 from urllib.parse import parse_qs, unquote
 import json
 import re
@@ -15,8 +14,7 @@ logger = logging.getLogger(__name__)
 
 class AudioManager:
     def __init__(self) -> None:
-        self.__audio_path: Path = Path("./static/audio")
-
+        self.__audio_path: Path = Path("./AudioDataCRM")
 
     def download(self, url: str, uniq_uuid: str) -> Path:
         "url->full url path where are stored audio file\nuniq_uuid->foulder where stored audio and will used like filename"
@@ -27,15 +25,13 @@ class AudioManager:
 
             return downloaded_path
 
-
     def delete(self, audio_path: Path) -> None:
-        """Видаляє аудіо за його адресою розташування"""
-        # try:
-        print(audio_path, "PATH")
-        audio_path.unlink()
-        print("Audio видалене успішно")
-        # except:
-        #     print("Audio видалене або не було заввнтажене")
+        """Delete audio file"""
+        try:
+            audio_path.unlink()
+            print("Audio видалене успішно")
+        except:
+            print("Audio видалене або не було заввнтажене")
 
     @property
     def get_audio_folder(self) -> Path:
@@ -65,7 +61,7 @@ class Leads:
     timestamp_x: Optional[datetime] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
-    lead_status: Optional[str] = None
+    path: Optional[str] = None
 
 
 @dataclass
@@ -91,7 +87,6 @@ class HookDecoder:
     @property
     def is_phonet(self) -> bool:
         return self.__is_phonet
-    
 
     def webhook_decoder(self, raw_data: str, return_data: bool = False) -> None | Dict[str, Any]:
         logger.info(
@@ -134,7 +129,6 @@ class HookDecoder:
             )
 
             return self.__clear_data
-        
 
     def integration_data(self) -> tuple[Literal["unique_uuid", "audio_mp3", "element_id", "domain"]] | None:
         """Якщо Phonet Повертає дані:\nunique_uuid -> Імя файлу.mp3\naudio_mp3 -> путь для завантаження файлу\nelement_id -> ID ліда"""
@@ -146,7 +140,6 @@ class HookDecoder:
                 self.__clear_data.get("self"),
             )
         return
-
 
     def table_map(self, lead_status: str) -> Dict[str, Dict[str, Any]]:
         logger.info(
@@ -224,12 +217,10 @@ class ApiCRMManager:
             "Authorization": f"Bearer {self.__access_token}"
         }
 
-    
     def refresh_token(self, new_token: str) -> None:
-        """Оновлення токену доступу"""
+        """Update access token"""
         self.__access_token = new_token
         self.__headers["Authorization"] = f"Bearer {self.__access_token}"
-
 
     def __request_pack(self, url: str) -> dict:
         """DRY Method"""
@@ -243,34 +234,63 @@ class ApiCRMManager:
 
     @property
     def lead_info(self):
-        """Отримати інформацію про Lead"""
+        """Get info about Lead"""
+
         def getter(lead_id: int) -> dict:
             url = f"{self.__base_url}leads/{lead_id}"
             return self.__request_pack(url)
+
         return getter
 
     @property
     def pipeline_info(self):
-        """Отримати інформацію про Воронку"""
+        """Get info about Pipeline"""
+
         def getter(pipeline_id: int) -> dict:
             url = f"{self.__base_url}leads/pipelines/{pipeline_id}"
             return self.__request_pack(url)
+
         return getter
 
     @property
     def status_info_args(self):
-        """Отримати інформацію про статус у воронці"""
+        """Get statuse info from Pipeline"""
+
         def getter(pipeline_id: int, status_id: int) -> dict:
             url = f"{self.__base_url}leads/pipelines/{pipeline_id}/statuses/{status_id}"
             return self.__request_pack(url)
+
         return getter
-    
 
     @property
     def status_info(self):
-        """Отримати інформацію про статус у воронці відразу напряму"""
+        """Get statuse info"""
+
         def getter(lead_id: int) -> dict:
             lead_info: dict = self.lead_info(lead_id)
             url = f"{self.__base_url}leads/pipelines/{lead_info.get('pipeline_id')}/statuses/{lead_info.get('status_id')}"
             return self.__request_pack(url)
+
         return getter
+
+    def post_send_data_to_crm(self, lead_id: int, content: str) -> None:
+        if not self.__access_token:
+            return
+
+        url = f"{self.__base_url}leads/{lead_id}/notes"
+        headers = {
+            "Authorization": f"Bearer {self.__access_token}",
+            "Content-Type": "application/json"
+        }
+        payload = [
+            {"note_type": "common", "params": {"text": content}}
+        ]
+        try:
+            response = requests.post(
+                url,
+                headers=headers,
+                json=payload
+            )
+            response.raise_for_status()
+        except requests.RequestException as error:
+            return
