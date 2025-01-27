@@ -30,9 +30,9 @@ ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
 def webhook_from_CRM():
     # try:
     if request.method == 'POST':
-        data = request.data
+        data = request.get_data()
         logger.info(f"Get data as bytes: {str(data)}")
-
+        print(data, "check_data")
         hash_data = hashlib.sha256(data).hexdigest()
 
         # REDIS_EXPIRE_TIME = 1800
@@ -49,26 +49,27 @@ def webhook_from_CRM():
         print(audio_filename, audio_url, lead_id, url_domain, "///////")
         print('\n')
 
-        try:
-            crm_manager: ApiCRMManager = ApiCRMManager(url_domain, access_token=ACCESS_TOKEN)
-            lead_status_str: str = crm_manager.status_info(lead_id).get('name')
-            print(f"Cтатус Ліда: {lead_status_str}")
-        except:
-            print("\nПомилка в отриманні статусу ліда")
+        # try:
+        #     crm_manager: ApiCRMManager = ApiCRMManager(url_domain, access_token=ACCESS_TOKEN)
+        #     lead_status_str: str = crm_manager.status_info(lead_id).get('name')
+        #     print(f"Cтатус Ліда: {lead_status_str}")
+        # except:
+        #     print("\nПомилка в отриманні статусу ліда")
 
         # try:
         audio_manager: AudioManager = AudioManager()
         audio_path = audio_manager.download(audio_url, audio_filename)
+        print(audio_path, "PATHHHH")
         transcript_text = transcriptions(audio_file_mp3_path=audio_path)
         audio_manager.delete(audio_path)
         # except:
         #     print("\nПомилка з аудіо")
 
-        db_data = hook_decod.table_map(lead_status_str)
+        # db_data = hook_decod.table_map(lead_status_str)
         #
-        json_saved_data = save_to_database(db_data)
-
-        assistant_start(transcrip_text=transcript_text, crm_data_json=json_saved_data, crm_manager=crm_manager)
+        # json_saved_data = save_to_database(db_data)
+        #
+        # assistant_start(transcrip_text=transcript_text, crm_data_json=json_saved_data, crm_manager=crm_manager)
 
         logger.info(
             "Successfully received data from webhook",

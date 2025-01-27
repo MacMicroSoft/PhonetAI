@@ -160,4 +160,4 @@ def assistant_start(transcrip_text: str, crm_data_json: dict, crm_manager):
     else:
         logger.error("Assistant run failed.")
 
-    handler.delete_assistant_thread()
+    # handler.delete_assistant_thread()
