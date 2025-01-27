@@ -11,6 +11,7 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
+    password = db.Column(db.String(80), nullable=False)
 
 
 class Integrations(db.Model):
@@ -28,9 +29,15 @@ class Manager(db.Model):
     username = db.Column(db.String, nullable=False)
     type = db.Column(db.Integer, nullable=False)
     leads = db.relationship("Leads", back_populates="manager")
-    is_permissions = db.Column(db.Boolean, nullable=False, default=False)
+    is_permissions = db.Column(db.Boolean, nullable=True, default=False)
 
-
+# class IsActiveAssitant(db.Model):
+#     __tablename__ = "is_active_assistant"
+#     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+#     pass
+#
+# class Assitant(db.Model):
+#     pass
 class Leads(db.Model):
     __tablename__ = "leads"
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -44,7 +51,7 @@ class Leads(db.Model):
     timestamp_x = db.Column(db.DateTime, nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    client_status = db.Column(db.String, nullable=True)
+    lead_status = db.Column(db.String, nullable=True)
     manager = db.relationship("Manager", back_populates="leads")
     integration = db.relationship("Integrations", back_populates="leads")
     phonet_leads = db.relationship("PhonetLeads", back_populates="lead")
@@ -66,7 +73,7 @@ class Analyses(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     lead_id = db.Column(db.Integer, db.ForeignKey("leads.id"), nullable=False)
     audio_text = db.Column(db.String)
-    analysed_text = db.Column(db.String)
+    analysed_text = db.Column(db.String, default=None)
     is_analysed = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 

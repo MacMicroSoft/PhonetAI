@@ -1,3 +1,4 @@
+import os
 from urllib.parse import parse_qs, unquote
 import json
 import re
@@ -14,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 class AudioManager:
     def __init__(self) -> None:
-        self.__audio_path: Path = Path("./AudioDataCRM")
+        self.__audio_path: Path = Path("./static/audio")
 
 
     def download(self, url: str, uniq_uuid: str) -> Path:
@@ -29,14 +30,13 @@ class AudioManager:
 
     def delete(self, audio_path: Path) -> None:
         """Видаляє аудіо за його адресою розташування"""
-        try:
-            audio_path.unlink()
-            print("Audio видалене успішно")
-        except:
-            print("Audio видалене або не було заввнтажене")
+        # try:
+        print(audio_path, "PATH")
+        audio_path.unlink()
+        print("Audio видалене успішно")
+        # except:
+        #     print("Audio видалене або не було заввнтажене")
 
-
-    
     @property
     def get_audio_folder(self) -> Path:
         return self.__audio_path
@@ -65,7 +65,7 @@ class Leads:
     timestamp_x: Optional[datetime] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
-    path: Optional[str] = None
+    lead_status: Optional[str] = None
 
 
 @dataclass
