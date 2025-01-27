@@ -1,15 +1,20 @@
 import os
 import time
 import logging
+from flask import Response, abort
 from openai import OpenAI
 from typing import Optional
+from functools import wraps
 
 from dotenv import load_dotenv
 from openai.types.beta import thread, Assistant
 from typing_extensions import override
 from openai import AssistantEventHandler
 
+from api.openai.decorators import has_permission
 from api.openai.placeholders import Thread, Message
+from api.webhook.functions.database_orm import save_analyse_data_to_database
+from models import Manager
 
 load_dotenv()
 
@@ -33,27 +38,27 @@ class AssistanceHandlerOpenAI(AssistantEventHandler):
         return transcription text
         """
         try:
-            audio_file_mp3 = open(f"{audio_file_mp3_path}", "rb")
-
-            transcription = client.audio.transcriptions.create(
-                model="whisper-1",
-                file=audio_file_mp3
-            )
-            if transcription:
-                return transcription.text
+            with open(audio_file_mp3_path, "rb") as audio_file_mp3:
+                transcription = client.audio.transcriptions.create(
+                    model="whisper-1",
+                    file=audio_file_mp3
+                )
+                if transcription:
+                    return transcription.text
 
         except FileNotFoundError as f:
-            logger.info(f"Error: The file was not found. Details: {f}")
+            logger.error(f"Error: File not found. Details: {f}")
         except IOError as o:
-            logger.info(f"Error: An input/output error occurred. Details: {o}")
+            logger.error(f"Error: I/O error occurred. Details: {o}")
         except Exception as e:
-            logger.info(f"An unexpected error occurred: {type(e).__name__} - {e}")
+            logger.error(f"Unexpected error: {type(e).__name__} - {e}")
+            raise e
 
     def create_assistant(self) -> Optional[Assistant]:
         """ Create assistant (DON'T USE NOW, Mby in future)"""
         assistant = self.__client.beta.assistants.create(
             name="Assistant_Name",
-            description="desc",   # Here should be promt mby
+            description="desc",  # Here should be promt mby
             model="gpt-4o",
         )
         return assistant
@@ -96,21 +101,28 @@ class AssistanceHandlerOpenAI(AssistantEventHandler):
             return stream
 
 
-def assistant_start(file_path: str):
+client = OpenAI(api_key=os.environ['OPENAI_API_KEY'])
+
+
+def transcript_start(file_path: str) -> str:
+    """
+    Викликає обробку аудіофайлу для створення транскрипції.
+    """
+    try:
+        return AssistanceHandlerOpenAI.transcriptions(client, file_path)
+    finally:
+        logger.info("Transcript completed.")
+
+
+@has_permission
+def assistant_start(transcrip_text: str, crm_data_json: dict):
     """Start the assistant process with an audio file."""
-    client = OpenAI(api_key=os.environ['OPENAI_API_KEY'])
-
-    transcrip_text = AssistanceHandlerOpenAI.transcriptions(client, file_path)
-
-    if not transcrip_text:
-        logger.error("Transcription failed. Exiting process.")
-        return
-
+    print("START SENDINGGG")
     handler = AssistanceHandlerOpenAI(
         client=client,
         assistant=os.getenv('OPENAI_ASSISTANT_NAME'),
         instructions=os.getenv('OPENAI_ASSISTANT_INSTRUCTIONS'),
-        message=transcrip_text
+        message=str(transcrip_text)
     )
 
     handler.create_assistant_thread()
@@ -123,7 +135,17 @@ def assistant_start(file_path: str):
         gpt_answer = response_message.content[0].text.value
         logger.info("Assistant run completed successfully.")
         print(gpt_answer)
+
+        analysed_json = {"lead_id": crm_data_json["lead_id"],
+                         "audio_text": transcrip_text,
+                         "analysed_text": gpt_answer,
+                         "is_analysed": True
+                         }
+
+        save_analyse_data_to_database(analysed_json)
     else:
         logger.error("Assistant run failed.")
 
     handler.delete_assistant_thread()
+
+

@@ -1,13 +1,13 @@
 import logging
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from models import Integrations, Manager, Leads, Phonet, PhonetLeads
+from models import Integrations, Manager, Leads, Phonet, PhonetLeads, Analyses
 from database import SessionLocal
 
 logger = logging.getLogger(__name__)
 
 
-def save_to_database(data: dict) -> None:
+def save_to_database(data: dict) -> dict:
     logger.info(
         "Start decoding data",
         extra={
@@ -80,6 +80,7 @@ def save_to_database(data: dict) -> None:
                     "service": "FLASK",
                 },
             )
+            return {"manager_id": manager.id, "lead_id": leads.id, "phonet_id": phonet.id}
 
     except Exception as e:
         logger.error(
@@ -92,6 +93,25 @@ def save_to_database(data: dict) -> None:
                 "error": str(e),
             },
         )
+
+
+def save_analyse_data_to_database(data: dict) -> None:
+    try:
+        analyse_data = {
+            "lead_id": data.get("lead_id"),
+            "audio_text": data.get("audio_text"),
+            "analysed_text": data.get("analysed_text"),
+            "is_analysed": data.get("is_analysed")
+        }
+
+        with SessionLocal() as db:
+            analysed_data = Analyses(**analyse_data)
+            db.add(analysed_data)
+            db.commit()
+
+    except Exception as e:
+        logger.error(f"Error saving analysed data: {e}")
+        db.rollback()
 
 
 def get_created_lead_id():
