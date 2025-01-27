@@ -11,9 +11,11 @@ import requests
 
 logger = logging.getLogger(__name__)
 
+
 class AudioManager:
     def __init__(self) -> None:
         self.__audio_path: Path = Path("./static/audio")
+        self.__audio_path.mkdir(parents=True, exist_ok=True)
 
     def download(self, url: str, uniq_uuid: str) -> Path:
         "url->full url path where are stored audio file\nuniq_uuid->foulder where stored audio and will used like filename"
@@ -139,7 +141,7 @@ class HookDecoder:
                 self.__clear_data.get("element_id"),
                 self.__clear_data.get("self"),
             )
-        return "CHECKKK123"
+        return
 
     def table_map(self, lead_status: str) -> Dict[str, Dict[str, Any]]:
         logger.info(

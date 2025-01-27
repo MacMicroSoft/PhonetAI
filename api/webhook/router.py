@@ -59,7 +59,6 @@ def webhook_from_CRM():
         # try:
         audio_manager: AudioManager = AudioManager()
         audio_path = audio_manager.download(audio_url, audio_filename)
-        print(audio_path, "PATHHHH")
         transcript_text = transcriptions(audio_file_mp3_path=audio_path)
         audio_manager.delete(audio_path)
         # except:
