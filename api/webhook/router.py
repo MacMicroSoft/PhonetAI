@@ -7,7 +7,6 @@ from flask import jsonify
 from sqlalchemy import select
 from datetime import datetime
 from dotenv import load_dotenv
-
 from api.openai.trancription import AssistanceHandlerOpenAI, assistant_start
 from database import SessionLocal
 from flask import Blueprint, Response, request
@@ -23,8 +22,7 @@ hook_bp = Blueprint('hook_bp', __name__, template_folder='templates', static_fol
 # redis_client = redis.StrictRedis(host=os.getenv("REDIS_HOST"), port=os.getenv("REDIS_PORT"), db=os.getenv("REDIS_DB"))
 
 
-ACCESS_TOKEN = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImp0aSI6IjgzYWU4M2IxYmVhNzQ1NjIyZGVmZDRkMGUxYjA5YzY2NTRmOTg2ZDhmNmM5YmE1NjdhZjI2ZjNmNjMyZDljMGI0YThlMTUxYWM2ODQ3YTRkIn0.eyJhdWQiOiJiOGIyZWExOS1mZDRlLTQxYWUtYTIxMC1mOTU1ZDliYjQ3N2YiLCJqdGkiOiI4M2FlODNiMWJlYTc0NTYyMmRlZmQ0ZDBlMWIwOWM2NjU0Zjk4NmQ4ZjZjOWJhNTY3YWYyNmYzZjYzMmQ5YzBiNGE4ZTE1MWFjNjg0N2E0ZCIsImlhdCI6MTczNzE0MzQyMiwibmJmIjoxNzM3MTQzNDIyLCJleHAiOjE3MzcyNDQ4MDAsInN1YiI6IjY4MTc1MjIiLCJncmFudF90eXBlIjoiIiwiYWNjb3VudF9pZCI6Mjg2NzcwNTUsImJhc2VfZG9tYWluIjoia29tbW8uY29tIiwidmVyc2lvbiI6Miwic2NvcGVzIjpbInB1c2hfbm90aWZpY2F0aW9ucyIsImNybSIsIm5vdGlmaWNhdGlvbnMiXSwiaGFzaF91dWlkIjoiYjhmOTVmMDAtODFlMS00Yzg1LWJhYTYtZWJmOWViNWZmOTJkIiwiYXBpX2RvbWFpbiI6ImFwaS1nLmtvbW1vLmNvbSJ9.Keu2KSPpdAb7SX_RgG3m9GK-HuUI6rP-DLL-hbGX13u99NKbpRvxfGgJQWFz7DmQKEFD2PZ_hHKMn-_c1flzYiLl-7Mc356rjUDAMVn9HsQXGuyNetGVjFwAxkoCXBDlNYUq3Mk_GcnxrrORFY1nyZeW5_qgY-8HGOYRIbeusHJOZ-_sPSOcUQEg8AlNrxmeVSPDuZhuAJ50-NavadW5-Ps5Tgy3oXFuYo2RWhP4DH3Ax2TtcUsOpwZYrStkIwfNF3beFbZRNMpCSh9Vh5015aV3fCTpgzEvOPTKNYiCnE8t4iPteLE0GlB_FhxHJ6FZ7RJDShmI2zKHAQK8vSxBrw"
-#Спочатку так для теста потім треба буде в ApiCRMManager зробити автоматизовано отримання/оновлення токену
+ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
 
 
 @hook_bp.route('/como/crm/', methods=['POST'])
