@@ -80,7 +80,11 @@ def save_to_database(data: dict) -> dict:
                     "service": "FLASK",
                 },
             )
-            return {"manager_id": manager.id, "lead_id": leads.id, "phonet_id": phonet.id}
+            return {"manager_id": manager.id,
+                    "lead_id": leads.id,
+                    "lead_element_id": "56002233",
+                    "phonet_id": phonet.id
+                    }
 
     except Exception as e:
         logger.error(

@@ -10,26 +10,17 @@ class UserAdminView(ModelView):
     form_columns = ('username', 'email')
     column_filters = ('username',)
 
-    def is_accessible(self):
-        return current_user.is_authenticated
-
 
 class IntegrationsAdminView(ModelView):
     column_list = ('id', 'subdomain', 'link')
     column_searchable_list = ('subdomain', 'link')
     form_columns = ('subdomain', 'link')
 
-    def is_accessible(self):
-        return current_user.is_authenticated
-
 
 class ManagerAdminView(ModelView):
     column_list = ('id', 'crm_user_id', 'username', 'type', 'is_permissions')
     column_searchable_list = ('username', 'crm_user_id')
     form_columns = ('crm_user_id', 'username', 'type', 'is_permissions')
-
-    def is_accessible(self):
-        return current_user.is_authenticated
 
 
 class LeadsAdminView(ModelView):
@@ -41,17 +32,11 @@ class LeadsAdminView(ModelView):
         'owner_id', 'account_id', 'element_id', 'element_type', 'manager_id', 'integration_id', 'text_message')
     column_filters = ('lead_status',)
 
-    def is_accessible(self):
-        return current_user.is_authenticated
-
 
 class PhonetAdminView(ModelView):
     column_list = ('id', 'unique_uuid', 'audio_mp3', 'phone_number', 'duration', 'call_status', 'call_result')
     column_searchable_list = ('phone_number', 'call_result')
     form_columns = ('audio_mp3', 'phone_number', 'duration', 'call_status', 'call_result')
-
-    def is_accessible(self):
-        return current_user.is_authenticated
 
 
 class AnalysesAdminView(ModelView):
@@ -59,14 +44,8 @@ class AnalysesAdminView(ModelView):
     column_searchable_list = ('audio_text', 'analysed_text')
     form_columns = ('lead_id', 'audio_text', 'analysed_text', 'is_analysed')
 
-    def is_accessible(self):
-        return current_user.is_authenticated
-
 
 class PhonetLeadsAdminView(ModelView):
     column_list = ('id', 'phonet_id', 'leads_id', 'last_update')
     column_searchable_list = ('phonet_id', 'leads_id')
     form_columns = ('phonet_id', 'leads_id', 'last_update')
-
-    def is_accessible(self):
-        return current_user.is_authenticated

@@ -103,19 +103,32 @@ class AssistanceHandlerOpenAI(AssistantEventHandler):
 
 client = OpenAI(api_key=os.environ['OPENAI_API_KEY'])
 
-
-def transcript_start(file_path: str) -> str:
+@staticmethod
+def transcriptions(audio_file_mp3_path) -> str:
     """
-    Викликає обробку аудіофайлу для створення транскрипції.
+    Use transcription to get text from mp3 for analyse in assistant.
+    return transcription text
     """
     try:
-        return AssistanceHandlerOpenAI.transcriptions(client, file_path)
-    finally:
-        logger.info("Transcript completed.")
+        with open(audio_file_mp3_path, "rb") as audio_file_mp3:
+            transcription = client.audio.transcriptions.create(
+                model="whisper-1",
+                file=audio_file_mp3
+            )
+            if transcription:
+                return transcription.text
+
+    except FileNotFoundError as f:
+        logger.error(f"Error: File not found. Details: {f}")
+    except IOError as o:
+        logger.error(f"Error: I/O error occurred. Details: {o}")
+    except Exception as e:
+        logger.error(f"Unexpected error: {type(e).__name__} - {e}")
+        raise e
 
 
 @has_permission
-def assistant_start(transcrip_text: str, crm_data_json: dict):
+def assistant_start(transcrip_text: str, crm_data_json: dict, crm_manager):
     """Start the assistant process with an audio file."""
     print("START SENDINGGG")
     handler = AssistanceHandlerOpenAI(
@@ -143,9 +156,8 @@ def assistant_start(transcrip_text: str, crm_data_json: dict):
                          }
 
         save_analyse_data_to_database(analysed_json)
+        crm_manager.post_send_data_to_crm(lead_id=crm_data_json["lead_element_id"], content=str(gpt_answer))
     else:
         logger.error("Assistant run failed.")
 
     handler.delete_assistant_thread()
-
-

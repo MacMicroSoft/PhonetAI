@@ -11,10 +11,9 @@ import requests
 
 logger = logging.getLogger(__name__)
 
-
 class AudioManager:
     def __init__(self) -> None:
-        self.__audio_path: Path = Path("./AudioDataCRM")
+        self.__audio_path: Path = Path("./static/audio")
 
     def download(self, url: str, uniq_uuid: str) -> Path:
         "url->full url path where are stored audio file\nuniq_uuid->foulder where stored audio and will used like filename"
@@ -26,12 +25,13 @@ class AudioManager:
             return downloaded_path
 
     def delete(self, audio_path: Path) -> None:
-        """Delete audio file"""
-        try:
-            audio_path.unlink()
-            print("Audio видалене успішно")
-        except:
-            print("Audio видалене або не було заввнтажене")
+        """Видаляє аудіо за його адресою розташування"""
+        # try:
+        print(audio_path, "PATH")
+        audio_path.unlink()
+        print("Audio видалене успішно")
+        # except:
+        #     print("Audio видалене або не було заввнтажене")
 
     @property
     def get_audio_folder(self) -> Path:
@@ -61,7 +61,7 @@ class Leads:
     timestamp_x: Optional[datetime] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
-    path: Optional[str] = None
+    lead_status: Optional[str] = None
 
 
 @dataclass
@@ -292,5 +292,6 @@ class ApiCRMManager:
                 json=payload
             )
             response.raise_for_status()
+            print("SUCCSESSSSSSSSSSSSSSSSSSSSSSSS")
         except requests.RequestException as error:
             return

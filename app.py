@@ -19,22 +19,9 @@ api = Api(api_bp)
 from api.webhook.router import hook_bp
 from api.auth.auth import auth
 
-login_manager = LoginManager()
-
-
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
-
-
 def create_app():
     app = Flask(__name__)
 
-    # Ініціалізація LoginManager
-    login_manager.init_app(app)
-    login_manager.login_view = 'auth.login'
-
-    # Flask-Admin
     admin = Admin(app, name='microblog', template_mode='bootstrap4')
     admin.add_view(UserAdminView(User, db.session))
     admin.add_view(IntegrationsAdminView(Integrations, db.session))
