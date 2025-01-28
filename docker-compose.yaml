@@ -1,49 +1,22 @@
-services:
-  flask-app:
-    build: .
-    container_name: flask-app
-    ports:
-      - "5000:5000"
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-    environment:
-      - FLASK_APP=app.py
-      - FLASK_ENV=development
-      - REDIS_URL=redis://redis:6379/0
-    depends_on:
-      - db
-      - redis
-    volumes:
-      - .:/app
-    networks:
-      - app-network
-
-  redis:
-    image: redis:6
-    container_name: redis
-    networks:
-      - app-network
-
-  db:
-    image: postgres:13
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: mydatabase
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    networks:
-      - app-network
-
-networks:
-  app-network:
-    driver: bridge
-
-volumes:
-  pgdata:
+flask-app:
+  build: .
+  container_name: flask-app
+  ports:
+    - "5000:5000"
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+  environment:
+    - FLASK_APP=app.py
+    - FLASK_ENV=development
+    - REDIS_URL=redis://redis:6379/0
+    - SQLALCHEMY_DATABASE_URI=postgresql://postgres:postgres@db:5432/mydatabase
+  depends_on:
+    - db
+    - redis
+  volumes:
+    - .:/app
+  networks:
+    - app-network
