@@ -13,11 +13,19 @@ from api.admin import UserAdminView, IntegrationsAdminView, ManagerAdminView, Le
     PhonetAdminView, PhonetLeadsAdminView
 from models import db, User, Integrations, Manager, Leads, Phonet, Analyzes, PhonetLeads
 
+# Flask config
+class Config:
+    CSRF_ENABLED = True
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'you-will-never-guess'
+    SQLALCHEMY_DATABASE_URI = os.environ.get('SQLALCHEMY_DATABASE_URI')
+    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or 'you-will-never-guess'
+    JWT_TOKEN_LOCATION = ['headers']
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+
 app = Flask(__name__)
 
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default_secret_key')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('SQLALCHEMY_DATABASE_URI', 'sqlite:///test.db')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# Use Config class for configuration
+app.config.from_object(Config)
 
 db.init_app(app)
 migrate = Migrate(app, db)
@@ -102,9 +110,6 @@ def create_app():
     logging.basicConfig(level=logging.INFO)
     app.logger.setLevel(logging.INFO)
     app.logger.info("Starting Flask app")
-
-    db.init_app(app)
-    Migrate(app, db)
 
     return app
 
