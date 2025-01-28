@@ -51,7 +51,10 @@ def webhook_from_CRM():
         try:
             crm_manager = ApiCRMManager(url_domain, access_token=ACCESS_TOKEN)
             lead_status_str = crm_manager.status_info(lead_id).get('name')
-            logger.info("Lead status: %s", lead_status_str)
+            if lead_status_str:
+                logger.info("Lead status: %s", lead_status_str)
+            else:
+                lead_status_str = "Unknown"
         except Exception as e:
             logger.info("Error fetching lead status: %s", e)
             return Response("Error fetching lead status.", status=500)
