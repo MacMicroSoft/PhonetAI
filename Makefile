@@ -1,7 +1,7 @@
 DOCKER_COMPOSE = docker-compose
 SERVICE = flask-app
-POETRY = poetry
 FLASK = flask
+python = python
 
 # Команди для міграцій
 migrate:
@@ -9,6 +9,10 @@ migrate:
 
 makemigrations:
 	$(DOCKER_COMPOSE) run $(SERVICE) $(python) $(FLASK) db migrate -m "Migrations"
+
+# Команда для створення суперкористувача
+createsuperuser:
+	$(DOCKER_COMPOSE) run $(SERVICE) $(python) $(FLASK) createsuperuser
 
 # Команди для роботи з Docker
 docker-run:
