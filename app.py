@@ -2,6 +2,7 @@ import os
 import click
 import logging
 from flask import Flask, redirect, url_for, request, Blueprint, render_template
+from flask.cli import with_appcontext
 from flask_admin import Admin, AdminIndexView, expose
 from flask_admin.contrib.sqla import ModelView
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
@@ -89,19 +90,23 @@ def logout():
 
 
 @app.cli.command('createsuperuser')
-@click.argument('username')
-@click.argument('email')
-@click.argument('password')
+@click.option('--username', prompt=True, help='The username for the superuser.')
+@click.option('--email', prompt=True, help='The email for the superuser.')
+@click.option('--password', prompt=True, hide_input=True, confirmation_prompt=True, help='The password for the superuser.')
+@with_appcontext
 def create_superuser(username, email, password):
     """Create a superuser"""
+
     if User.query.filter_by(username=username).first():
         print("User with this username already exists.")
         return
 
     user = User(username=username, email=email, is_admin=True)
     user.set_password(password)
+
     db.session.add(user)
     db.session.commit()
+
     print(f"Superuser {username} created successfully.")
 
 
