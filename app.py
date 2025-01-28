@@ -12,17 +12,10 @@ from werkzeug.security import check_password_hash
 
 from api.admin import UserAdminView, IntegrationsAdminView, ManagerAdminView, LeadsAdminView, AnalysesAdminView, \
     PhonetAdminView, PhonetLeadsAdminView
+from config import Config
 from models import db, User, Integrations, Manager, Leads, Phonet, Analyzes, PhonetLeads
 
 # Flask config
-class Config:
-    CSRF_ENABLED = True
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'you-will-never-guess'
-    SQLALCHEMY_DATABASE_URI = os.environ.get('SQLALCHEMY_DATABASE_URI')
-    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or 'you-will-never-guess'
-    JWT_TOKEN_LOCATION = ['headers']
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
-
 app = Flask(__name__)
 
 # Use Config class for configuration
