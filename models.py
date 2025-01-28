@@ -19,6 +19,7 @@ class User(db.Model, UserMixin):
     def set_password(self, password):
         self.password = generate_password_hash(password)
 
+
 class Integrations(db.Model):
     __tablename__ = "integrations"
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
