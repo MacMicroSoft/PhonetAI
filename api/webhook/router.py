@@ -64,15 +64,17 @@ def webhook_from_CRM():
             logger.info("Data wrong")
 
         audio_manager = AudioManager()
-        print(json_saved_data["manager_id"], "check")
         try:
-            audio_path = audio_manager.download(audio_url, audio_filename, json_saved_data["manager_id"])
-            logger.info("Audio download: %s", audio_path)
+            if audio_url is not None:
+                audio_path = audio_manager.download(audio_url, audio_filename, json_saved_data["manager_id"])
+                logger.info("Audio download: %s", audio_path)
 
-            transcript_text = transcriptions(audio_file_mp3_path=str(audio_path))
-            logger.info("Transcription: %s", transcript_text)
+                transcript_text = transcriptions(audio_file_mp3_path=str(audio_path))
+                logger.info("Transcription: %s", transcript_text)
 
-            audio_manager.delete(audio_path)
+                audio_manager.delete(audio_path)
+            else:
+                logger.info("Audio url is not exist")
         except Exception as e:
             logger.error(f"Unexpected error: {e}")
             return Response("Error processing audio file.", status=500)
