@@ -11,7 +11,7 @@ makemigrations:
 
 # Команда для створення суперкористувача
 createsuperuser:
-	$(DOCKER_COMPOSE) run $(SERVICE) flask createsuperuser
+	$(DOCKER_COMPOSE) run flask-app flask createsuperuser --username $(username) --email $(email) --password $(password)
 
 # Команди для роботи з Docker
 docker-run:
