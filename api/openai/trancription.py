@@ -104,7 +104,7 @@ class AssistanceHandlerOpenAI(AssistantEventHandler):
 client = OpenAI(api_key=os.environ['OPENAI_API_KEY'])
 
 @staticmethod
-def transcriptions(audio_file_mp3_path):
+def transcriptions(audio_file_mp3_path: str):
     """
     Use transcription to get text from mp3 for analyse in assistant.
     return transcription text
@@ -127,10 +127,8 @@ def transcriptions(audio_file_mp3_path):
         raise e
 
 
-@has_permission
 def assistant_start(transcrip_text: str, crm_data_json: dict, crm_manager):
     """Start the assistant process with an audio file."""
-    print("START SENDINGGG")
     handler = AssistanceHandlerOpenAI(
         client=client,
         assistant=os.getenv('OPENAI_ASSISTANT_NAME'),
@@ -160,4 +158,4 @@ def assistant_start(transcrip_text: str, crm_data_json: dict, crm_manager):
     else:
         logger.error("Assistant run failed.")
 
-    # handler.delete_assistant_thread()
+    handler.delete_assistant_thread()

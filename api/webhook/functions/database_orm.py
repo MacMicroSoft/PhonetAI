@@ -1,7 +1,7 @@
 import logging
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from models import Integrations, Manager, Leads, Phonet, PhonetLeads, Analyses
+from models import Integrations, Manager, Leads, Phonet, PhonetLeads, Analyzes
 from database import SessionLocal
 
 logger = logging.getLogger(__name__)
@@ -109,7 +109,7 @@ def save_analyse_data_to_database(data: dict) -> None:
         }
 
         with SessionLocal() as db:
-            analysed_data = Analyses(**analyse_data)
+            analysed_data = Analyzes(**analyse_data)
             db.add(analysed_data)
             db.commit()
 

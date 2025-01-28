@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 hook_bp = Blueprint('hook_bp', __name__, template_folder='templates', static_folder='static')
 
-# redis_client = redis.StrictRedis(host=os.getenv("REDIS_HOST"), port=os.getenv("REDIS_PORT"), db=os.getenv("REDIS_DB"))
+redis_client = redis.StrictRedis(host=os.getenv("REDIS_HOST"), port=os.getenv("REDIS_PORT"), db=os.getenv("REDIS_DB"))
 
 
 ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
@@ -28,123 +28,71 @@ ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
 
 @hook_bp.route('/como/crm/', methods=['POST'])
 def webhook_from_CRM():
-    # try:
-    if request.method == 'POST':
+    try:
+        if request.method != 'POST':
+            logger.warning("Only POST method is allowed")
+            return Response("Only POST method is allowed.", status=405)
+
         data = request.get_data()
         hash_data = hashlib.sha256(data).hexdigest()
 
-        # REDIS_EXPIRE_TIME = 1800
-
-        # if redis_client.exists(hash_data):
-        #     return Response("Duplicate data received, ignoring.", status=200)
-        #
-        # redis_client.set(hash_data, 1, ex=REDIS_EXPIRE_TIME)
+        REDIS_EXPIRE_TIME = 1800
+        if redis_client.exists(hash_data):
+            logger.info("Duplicate data received, ignoring")
+            return Response("Duplicate data received, ignoring.", status=200)
+        redis_client.set(hash_data, 1, ex=REDIS_EXPIRE_TIME)
 
         hook_decod = HookDecoder()
         hook_decod.webhook_decoder(raw_data=data)
 
         audio_filename, audio_url, lead_id, url_domain = hook_decod.integration_data()
-        # print(audio_filename, audio_url, lead_id, url_domain, "///////")
-        # print('\n')
-        #
-        # try:
-        crm_manager: ApiCRMManager = ApiCRMManager(url_domain, access_token=ACCESS_TOKEN)
-        lead_status_str: str = crm_manager.status_info(lead_id).get('name')
-        print(f"Cтатус Ліда: {lead_status_str}")
-        # except:
-        #     print("\nПомилка в отриманні статусу ліда")
+        logger.info("Отримано дані: %s, %s, %s, %s", audio_filename, audio_url, lead_id, url_domain)
 
-        # try:
-        audio_manager: AudioManager = AudioManager()
-        audio_path = audio_manager.download(audio_url, audio_filename)
-        print(audio_path, "Check_Audio")
-        transcript_text = transcriptions(audio_file_mp3_path=audio_path)
-        print(transcript_text, "Check_Transcript")
-        audio_manager.delete(audio_path)
-        # except:
-        #     print("\nПомилка з аудіо")
-        print("Start saving lead status")
-        db_data = hook_decod.table_map(lead_status_str)
+        try:
+            crm_manager = ApiCRMManager(url_domain, access_token=ACCESS_TOKEN)
+            lead_status_str = crm_manager.status_info(lead_id).get('name')
+            logger.info("Lead status: %s", lead_status_str)
+        except Exception as e:
+            logger.info("Error fetching lead status: %s", e)
+            return Response("Error fetching lead status.", status=500)
+        try:
+            logger.info("Start save data")
+            db_data = hook_decod.table_map(lead_status_str)
+            json_saved_data = save_to_database(db_data)
+            logger.info("Data saved")
+        except Exception as e:
+            logger.info("Data wrong")
 
-        print("Save data to database and return")
-        json_saved_data = save_to_database(db_data)
-        print("Here should be assistantg")
-        assistant_start(transcrip_text=transcript_text, crm_data_json=json_saved_data, crm_manager=crm_manager)
+        audio_manager = AudioManager()
+        print(json_saved_data["manager_id"], "check")
+        try:
+            audio_path = audio_manager.download(audio_url, audio_filename, json_saved_data["manager_id"])
+            logger.info("Audio download: %s", audio_path)
 
-        logger.info(
-            "Successfully received data from webhook",
-            extra={
-                "status_code": "100",
-                "status_message": "DATA",
-                "operation_type": "WEBHOOK",
-                "service": "FLASK",
-                "extra": {},
-            },
-        )
+            transcript_text = transcriptions(audio_file_mp3_path=str(audio_path))
+            logger.info("Transcription: %s", transcript_text)
+
+            audio_manager.delete(audio_path)
+        except Exception as e:
+            logger.error(f"Unexpected error: {e}")
+            return Response("Error processing audio file.", status=500)
+
+        try:
+            logger.info("Start Assistant")
+
+            assistant_start(
+                transcrip_text=transcript_text,
+                crm_data_json=json_saved_data,
+                crm_manager=crm_manager
+            )
+            logger.info("Assistant analyzed data")
+        except Exception as e:
+            logger.info("Error saving data or running assistant: %s", e)
+            return Response("Error saving data or running assistant.", status=500)
+
+        logger.info("Data received successfully")
         return Response("Data received successfully", status=200)
-    # except Exception as e:
-    #     logger.info(
-    #         "Error processing data from webhook",
-    #         extra={
-    #             "status_code": "400",
-    #             "status_message": "BAD REQUEST",
-    #             "operation_type": "WEBHOOK",
-    #             "service": "FLASK",
-    #             "extra": {str(e)},
-    #         },
-    #     )
-    #     return Response("Error processing data", status=400)
 
-
-def custom_serializer(obj):
-    """Serializer for objects that are not supported by JSON."""
-    if isinstance(obj, datetime):
-        return obj.isoformat()
-    raise TypeError(f"Type {type(obj)} not serializable")
-
-
-@hook_bp.route('/como/crm/info/', methods=['GET'])
-def webhook_info():
-    db = SessionLocal()
-    try:
-        if request.method == "GET":
-            leads = db.query(Leads).all()
-            managers = db.query(Manager).all()
-            integrations = db.query(Integrations).all()
-            phonet = db.query(Phonet).all()
-            phonet_leads = db.query(PhonetLeads).all()
-
-            leads_list = [
-                {key: value for key, value in lead.__dict__.items() if not key.startswith("_")}
-                for lead in leads
-            ]
-            managers_list = [
-                {key: value for key, value in manager.__dict__.items() if not key.startswith("_")}
-                for manager in managers
-            ]
-            integrations_list = [
-                {key: value for key, value in integration.__dict__.items() if not key.startswith("_")}
-                for integration in integrations
-            ]
-            phonet_list = [
-                {key: value for key, value in phone.__dict__.items() if not key.startswith("_")}
-                for phone in phonet
-            ]
-            phonet_leads_list = [
-                {key: value for key, value in phonet_lead.__dict__.items() if not key.startswith("_")}
-                for phonet_lead in phonet_leads
-            ]
-
-            response = {
-                "leads": leads_list,
-                "managers": managers_list,
-                "integrations": integrations_list,
-                "phonet": phonet_list,
-                "phonet_leads": phonet_leads_list,
-            }
-
-            return jsonify(response)
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    finally:
-        db.close()
+        logger.info("Error processing request")
+        return Response(f"Error processing request: {e}", status=500)

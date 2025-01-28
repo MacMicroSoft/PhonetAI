@@ -9,6 +9,8 @@ from uuid import UUID
 import logging
 import requests
 
+from api.openai.decorators import has_permission
+
 logger = logging.getLogger(__name__)
 
 
@@ -17,14 +19,29 @@ class AudioManager:
         self.__audio_path: Path = Path("./static/audio")
         self.__audio_path.mkdir(parents=True, exist_ok=True)
 
-    def download(self, url: str, uniq_uuid: str) -> Path:
-        "url->full url path where are stored audio file\nuniq_uuid->foulder where stored audio and will used like filename"
-        response = requests.get(url)
-        downloaded_path: Path = Path(f"{self.__audio_path}/{uniq_uuid}.mp3")
-        with open(downloaded_path, 'wb') as file:
-            file.write(response.content)
+    @has_permission
+    def download(self, url: str, uniq_uuid: str, manager_id: int) -> Path:
+        """
+        Завантажує аудіофайл за URL і зберігає його локально.
+        """
+        try:
+            logger.info(f"Downloading audio file from URL: {url}")
+            response = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
+            response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Failed to download audio file: {e}")
+            raise
 
+        downloaded_path: Path = self.__audio_path / f"{uniq_uuid}.mp3"
+        try:
+            with open(downloaded_path, "wb") as file:
+                file.write(response.content)
+            logger.info(f"File successfully downloaded to: {downloaded_path}")
             return downloaded_path
+        except Exception as e:
+            logger.error(f"Error saving audio file: {e}")
+            raise
+
 
     def delete(self, audio_path: Path) -> None:
         """Видаляє аудіо за його адресою розташування"""
@@ -294,6 +311,5 @@ class ApiCRMManager:
                 json=payload
             )
             response.raise_for_status()
-            print("SUCCSESSSSSSSSSSSSSSSSSSSSSSSS")
         except requests.RequestException as error:
             return

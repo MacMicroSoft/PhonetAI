@@ -1,53 +1,113 @@
 import os
+import click
 import logging
-import sys
-import redis
-from flask import Flask, Blueprint
-from flask_admin import Admin
+from flask import Flask, redirect, url_for, request, Blueprint, render_template
+from flask_admin import Admin, AdminIndexView, expose
 from flask_admin.contrib.sqla import ModelView
-from flask import Flask, render_template
-from flask_basicauth import BasicAuth
-from flask_login import LoginManager
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_migrate import Migrate
 from flask_restful import Api
-from api.admin import *
-from models import *
+from werkzeug.security import check_password_hash
+
+from api.admin import UserAdminView, IntegrationsAdminView, ManagerAdminView, LeadsAdminView, AnalysesAdminView, \
+    PhonetAdminView, PhonetLeadsAdminView
+from models import db, User, Integrations, Manager, Leads, Phonet, Analyzes, PhonetLeads
+
+app = Flask(__name__)
+
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default_secret_key')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('SQLALCHEMY_DATABASE_URI', 'sqlite:///test.db')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db.init_app(app)
+migrate = Migrate(app, db)
+
+login_manager = LoginManager(app)
+login_manager.login_view = 'login'
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
 
 api_bp = Blueprint('api', __name__)
 api = Api(api_bp)
 
 from api.webhook.router import hook_bp
-from api.auth.auth import auth
 
+app.register_blueprint(api_bp)
+app.register_blueprint(hook_bp, url_prefix='/webhook')
+
+
+class MyAdminIndexView(AdminIndexView):
+    @expose('/')
+    @login_required
+    def index(self):
+        return super(MyAdminIndexView, self).index()
+
+
+admin = Admin(app, name='Admin Panel', template_mode='bootstrap4', index_view=MyAdminIndexView())
+admin.add_view(IntegrationsAdminView(Integrations, db.session))
+admin.add_view(ManagerAdminView(Manager, db.session))
+admin.add_view(LeadsAdminView(Leads, db.session))
+admin.add_view(PhonetAdminView(Phonet, db.session))
+admin.add_view(AnalysesAdminView(Analyzes, db.session))
+admin.add_view(PhonetLeadsAdminView(PhonetLeads, db.session))
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        user = User.query.filter_by(username=username).first()
+
+        if user and check_password_hash(user.password, password):
+            login_user(user)
+            next_page = request.args.get('next')
+            return redirect(next_page or url_for('admin.index'))
+        else:
+            return "Invalid credentials", 401
+
+    return render_template('admin/login.html')
+
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
+
+
+@app.cli.command('createsuperuser')
+@click.argument('username')
+@click.argument('email')
+@click.argument('password')
+def create_superuser(username, email, password):
+    """Create a superuser"""
+    if User.query.filter_by(username=username).first():
+        print("User with this username already exists.")
+        return
+
+    user = User(username=username, email=email, is_admin=True)
+    user.set_password(password)
+    db.session.add(user)
+    db.session.commit()
+    print(f"Superuser {username} created successfully.")
+
+
+# App factory
 def create_app():
-    app = Flask(__name__)
-
-    admin = Admin(app, name='microblog', template_mode='bootstrap4')
-    admin.add_view(UserAdminView(User, db.session))
-    admin.add_view(IntegrationsAdminView(Integrations, db.session))
-    admin.add_view(ManagerAdminView(Manager, db.session))
-    admin.add_view(LeadsAdminView(Leads, db.session))
-    admin.add_view(PhonetAdminView(Phonet, db.session))
-    admin.add_view(AnalysesAdminView(Analyses, db.session))
-    admin.add_view(PhonetLeadsAdminView(PhonetLeads, db.session))
-
     logging.basicConfig(level=logging.INFO)
-
     app.logger.setLevel(logging.INFO)
-    app.logger.info("Info log information")
+    app.logger.info("Starting Flask app")
 
-    app.config.from_object("config.ProdConfig")
     db.init_app(app)
     Migrate(app, db)
-
-    app.register_blueprint(api_bp)
-    app.register_blueprint(hook_bp, url_prefix='/webhook')
-    app.register_blueprint(auth, url_prefix='/auth')
 
     return app
 
 
 if __name__ == "__main__":
-    app = create_app()
-
     app.run(host="0.0.0.0", port=5000)

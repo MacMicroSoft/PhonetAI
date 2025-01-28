@@ -1,18 +1,23 @@
 import uuid
 from datetime import datetime
+from werkzeug.security import generate_password_hash
+
+from flask_login import UserMixin
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
 
 
-class User(db.Model):
-    __tablename__ = "users"
+class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password = db.Column(db.String(80), nullable=False)
+    email = db.Column(db.String(150), unique=True, nullable=False)
+    password = db.Column(db.String(200), nullable=False)
+    is_admin = db.Column(db.Boolean, default=False)
 
+    def set_password(self, password):
+        self.password = generate_password_hash(password)
 
 class Integrations(db.Model):
     __tablename__ = "integrations"
@@ -31,13 +36,7 @@ class Manager(db.Model):
     leads = db.relationship("Leads", back_populates="manager")
     is_permissions = db.Column(db.Boolean, nullable=True, default=False)
 
-# class IsActiveAssitant(db.Model):
-#     __tablename__ = "is_active_assistant"
-#     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-#     pass
-#
-# class Assitant(db.Model):
-#     pass
+
 class Leads(db.Model):
     __tablename__ = "leads"
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -69,7 +68,7 @@ class Phonet(db.Model):
     phonet_leads = db.relationship("PhonetLeads", back_populates="phonet")
 
 
-class Analyses(db.Model):
+class Analyzes(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     lead_id = db.Column(db.Integer, db.ForeignKey("leads.id"), nullable=False)
     audio_text = db.Column(db.String)
