@@ -184,7 +184,7 @@ def assistant_start(transcrip_text: str, crm_data_json: dict, crm_manager):
             system_content=content,
             promt_type=prompt_type
         )
-        handler.update_assistant()
+        # handler.update_assistant()
         handler.create_assistant_thread()
         handler.create_assistant_message()
 

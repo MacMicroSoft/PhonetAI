@@ -76,7 +76,6 @@ class AssistantAdminView(ModelView):
                 message=None,
                 system_content = str("Test"),
                 promt_type = str("Test")
-
             )
             assistant = openai_helper.create_assistant(
                 name=model.assistant_name,
