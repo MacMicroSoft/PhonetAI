@@ -176,7 +176,6 @@ def assistant_start(transcrip_text: str, crm_data_json: dict, crm_manager):
     content = assistant_check.get('content')
     prompt_type = assistant_check.get('prompt_type')
 
-    print(assistant_check, "////////////////////////////////")
     if assistant_check is not None:
         handler = AssistanceHandlerOpenAI(
             assistant=assistant_id,
