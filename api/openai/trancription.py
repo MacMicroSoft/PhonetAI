@@ -69,25 +69,18 @@ class AssistanceHandlerOpenAI(AssistantEventHandler):
         )
         return assistant
 
-    def update_assistant(self):
-        my_updated_assistant = client.beta.assistants.update(
-            assistant_id=self.__assistant_id,
-            instructions=self._system_content,
-        )
-
     def change_assistant_system_promts(self, assistant_id):
         assistant = self.__client.beta.assistants.update(
             assistant_id=assistant_id,
             instructions=self._instructions,
         )
 
+        pass
+
     def create_assistant_thread(self) -> Optional[Thread]:
         """Create new thread."""
-
         if not self._thread:
-            self._thread = self.__client.beta.threads.create(
-            )
-
+            self._thread = self.__client.beta.threads.create()
         return self._thread
 
     def delete_assistant_thread(self) -> None:
@@ -148,22 +141,16 @@ def transcriptions(audio_file_mp3_path: str):
 
 def get_first_active_assistant():
     with SessionLocal() as db:
-        # Query the Assistant table and also include prompt_type and content from the Prompts table
-        result = db.query(Assistant, Prompts.prompt_type, Prompts.content) \
-            .join(Prompts, Prompts.assistant_id == Assistant.id) \
-            .filter(Assistant.is_active == True, Prompts.is_active == True) \
-            .first()
+        # Query only the necessary fields (assistant_id and message_promt) from the Assistant table
+        result = db.query(Assistant.assistant_id, Assistant.message_promt) \
+                   .filter(Assistant.is_active == True) \
+                   .first()
 
         if result:
-            # Extract the assistant instance, prompt_type, and content
-            assistant = result[0]  # Assistant instance
-            prompt_type = result[1]  # Prompt type from Prompts
-            content = result[2]  # Content from Prompts
+            # Return only the assistant_id and message_promt
             return {
-                "assistant_id": assistant.assistant_id,
-                "message_promt": assistant.message_promt,
-                "prompt_type": prompt_type,
-                "content": content
+                "assistant_id": result[0],
+                "message_promt": result[1]
             }
         return None
 
@@ -173,18 +160,16 @@ def assistant_start(transcrip_text: str, crm_data_json: dict, crm_manager):
     assistant_check = get_first_active_assistant()
     assistant_id = assistant_check.get('assistant_id')
     message_promt = assistant_check.get('message_promt')
-    content = assistant_check.get('content')
-    prompt_type = assistant_check.get('prompt_type')
 
     if assistant_check is not None:
         handler = AssistanceHandlerOpenAI(
             assistant=assistant_id,
             instructions=message_promt,
             message=str(transcrip_text),
-            system_content=content,
-            promt_type=prompt_type
+            system_content="s",
+            promt_type="t"
         )
-        # handler.update_assistant()
+
         handler.create_assistant_thread()
         handler.create_assistant_message()
 
