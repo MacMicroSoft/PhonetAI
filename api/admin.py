@@ -1,7 +1,13 @@
 from flask_admin.contrib.sqla import ModelView
 from flask import request, redirect, url_for
 from flask_admin import BaseView, expose
+from flask_admin.contrib.sqla.fields import QuerySelectField
 from flask_login import current_user
+from wtforms import BooleanField
+from database import SessionLocal
+
+from api.openai.trancription import AssistanceHandlerOpenAI, client
+from models import Assistant
 
 
 class SecureModelView(ModelView):
@@ -54,3 +60,40 @@ class PhonetLeadsAdminView(SecureModelView):
     column_list = ('id', 'phonet_id', 'leads_id', 'last_update')
     column_searchable_list = ('phonet_id', 'leads_id')
     form_columns = ('phonet_id', 'leads_id', 'last_update')
+
+
+class AssistantAdminView(ModelView):
+    column_list = ["assistant_name", "model", "description", "message_promt", "is_active"]
+    form_columns = ["assistant_name", "model", "description", "message_promt", "is_active"]
+    form_overrides = {"is_active": BooleanField}  # Використовуємо BooleanField для is_active
+
+    def on_model_change(self, form, model, is_created):
+        if is_created:
+            print("Запис створено")
+            openai_helper = AssistanceHandlerOpenAI(
+                assistant=None,
+                instructions=None,
+                message=None
+            )
+            assistant = openai_helper.create_assistant(
+                name=model.assistant_name,
+                desc=model.description,
+                model=model.model
+            )
+            if assistant:
+                model.assistant_id = assistant.id
+        else:
+            print("Запис оновлено")
+
+        super().on_model_change(form, model, is_created)
+
+
+class PromptsAdmin(ModelView):
+    form_extra_fields = {
+        "assistant": QuerySelectField(
+            "Assistant",
+            query_factory=lambda: Assistant.query.all(),
+            get_label="assistant_name",
+            allow_blank=False,
+        )
+    }

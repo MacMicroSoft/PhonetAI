@@ -82,7 +82,7 @@ def save_to_database(data: dict) -> dict:
             )
             return {"manager_id": manager.id,
                     "lead_id": leads.id,
-                    "lead_element_id": "56002233",
+                    "lead_element_id": leads.element_id,
                     "phonet_id": phonet.id
                     }
 

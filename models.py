@@ -86,3 +86,35 @@ class PhonetLeads(db.Model):
     last_update = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     phonet = db.relationship("Phonet", back_populates="phonet_leads")
     lead = db.relationship("Leads", back_populates="phonet_leads")
+
+
+class Assistant(db.Model):
+    __tablename__ = "assistant"
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    assistant_name = db.Column(db.String, nullable=False)
+    assistant_id = db.Column(db.String, nullable=True, unique=True, default=None)
+    model = db.Column(db.String, nullable=False)
+    description = db.Column(db.String, nullable=False)
+    message_promt = db.Column(db.String, nullable=True)
+    is_active = db.Column(db.Boolean, nullable=False, default=False)
+
+
+class Prompts(db.Model):
+    __tablename__ = "prompts"
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+
+    assistant_id = db.Column(db.Integer, db.ForeignKey("assistant.id"), nullable=False)
+
+    prompt_type = db.Column(db.String, nullable=False)
+    content = db.Column(db.String, nullable=False)
+    is_active = db.Column(db.Boolean, nullable=False, default=False)
+
+    assistant = db.relationship("Assistant", backref="prompts")
+
+
+class ActivePrompts(db.Model):
+    __tablename__ = "active_prompts"
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    assistant_id = db.Column(db.String, db.ForeignKey("assistant.assistant_id"), nullable=False, unique=True)
+    active_system_prompt_id = db.Column(db.Integer, db.ForeignKey("prompts.id"), nullable=False)
+    active_message_prompt_id = db.Column(db.Integer, db.ForeignKey("prompts.id"), nullable=False)

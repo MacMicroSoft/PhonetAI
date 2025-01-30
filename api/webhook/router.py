@@ -22,7 +22,6 @@ hook_bp = Blueprint('hook_bp', __name__, template_folder='templates', static_fol
 
 redis_client = redis.StrictRedis(host=os.getenv("REDIS_HOST"), port=os.getenv("REDIS_PORT"), db=os.getenv("REDIS_DB"))
 
-
 ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
 
 
@@ -36,11 +35,11 @@ def webhook_from_CRM():
         data = request.get_data()
         hash_data = hashlib.sha256(data).hexdigest()
 
-        REDIS_EXPIRE_TIME = 1800
-        if redis_client.exists(hash_data):
-            logger.info("Duplicate data received, ignoring")
-            return Response("Duplicate data received, ignoring.", status=200)
-        redis_client.set(hash_data, 1, ex=REDIS_EXPIRE_TIME)
+        # REDIS_EXPIRE_TIME = 1800
+        # if redis_client.exists(hash_data):
+        #     logger.info("Duplicate data received, ignoring")
+        #     return Response("Duplicate data received, ignoring.", status=200)
+        # redis_client.set(hash_data, 1, ex=REDIS_EXPIRE_TIME)
 
         hook_decod = HookDecoder()
         hook_decod.webhook_decoder(raw_data=data)

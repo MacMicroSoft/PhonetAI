@@ -11,9 +11,9 @@ from flask_restful import Api
 from werkzeug.security import check_password_hash
 
 from api.admin import UserAdminView, IntegrationsAdminView, ManagerAdminView, LeadsAdminView, AnalysesAdminView, \
-    PhonetAdminView, PhonetLeadsAdminView
+    PhonetAdminView, PhonetLeadsAdminView, PromptsAdmin, AssistantAdminView
 from config import Config
-from models import db, User, Integrations, Manager, Leads, Phonet, Analyzes, PhonetLeads
+from models import db, User, Integrations, Manager, Leads, Phonet, Analyzes, PhonetLeads, Assistant, Prompts
 
 # Flask config
 app = Flask(__name__)
@@ -56,6 +56,8 @@ admin.add_view(LeadsAdminView(Leads, db.session))
 admin.add_view(PhonetAdminView(Phonet, db.session))
 admin.add_view(AnalysesAdminView(Analyzes, db.session))
 admin.add_view(PhonetLeadsAdminView(PhonetLeads, db.session))
+admin.add_view(AssistantAdminView(Assistant, db.session))
+admin.add_view(PromptsAdmin(Prompts, db.session))
 
 
 @app.route('/login', methods=['GET', 'POST'])

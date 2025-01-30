@@ -12,6 +12,7 @@ class Config:
     JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or 'you-will-never-guess'
     JWT_TOKEN_LOCATION = ['headers']
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    DEBUG = True
 
 
 class ProductionConfig(Config):
