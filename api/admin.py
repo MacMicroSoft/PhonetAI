@@ -95,7 +95,7 @@ class PromptsAdmin(ModelView):
     form_extra_fields = {
         "assistant": SelectField(
             "Assistant",
-            choices=[],
+            choices=[],  # Це буде перезаписано в on_form_prefill
             coerce=int,
             widget=Select2Widget()
         )
@@ -103,3 +103,6 @@ class PromptsAdmin(ModelView):
 
     def on_form_prefill(self, form, id):
         form.assistant.choices = [(a.id, a.assistant_name) for a in Assistant.query.all()]
+
+    def __init__(self, *args, **kwargs):
+        super(PromptsAdmin, self).__init__(*args, **kwargs)
