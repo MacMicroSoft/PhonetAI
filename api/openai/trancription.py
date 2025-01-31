@@ -27,14 +27,12 @@ client = OpenAI(api_key=os.environ['OPENAI_API_KEY'])
 
 
 class AssistanceHandlerOpenAI(AssistantEventHandler):
-    def __init__(self, assistant: str, instructions: str, message: str, system_content: str, promt_type: str) -> None:
+    def __init__(self, assistant: str, instructions: str, message: str) -> None:
         super().__init__()
         self.__client = client
         self.__assistant_id = assistant or None
         self._instructions = instructions or None
         self._assistant_input = message or None
-        self.promt_type = promt_type
-        self._system_content = system_content or None
         self._thread = None
 
     @staticmethod

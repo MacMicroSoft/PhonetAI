@@ -8,7 +8,7 @@ from wtforms import BooleanField, SelectField
 from database import SessionLocal
 
 from api.openai.trancription import AssistanceHandlerOpenAI, client
-from models import Assistant
+from models import Assistant, db
 
 
 class SecureModelView(ModelView):
@@ -75,8 +75,6 @@ class AssistantAdminView(ModelView):
                 assistant=None,
                 instructions=None,
                 message=None,
-                system_content=str("Test"),
-                promt_type=str("Test")
             )
             assistant = openai_helper.create_assistant(
                 name=model.assistant_name,
@@ -95,14 +93,28 @@ class PromptsAdmin(ModelView):
     form_extra_fields = {
         "assistant": SelectField(
             "Assistant",
-            choices=[],  # Це буде перезаписано в on_form_prefill
+            choices=[],  # Заповнюється динамічно в `on_form_prefill`
             coerce=int,
             widget=Select2Widget()
         )
     }
 
     def on_form_prefill(self, form, id):
-        form.assistant.choices = [(a.id, a.assistant_name) for a in Assistant.query.all()]
+        """Викликається при редагуванні (НЕ при створенні!)"""
+        print(" on_form_prefill викликано!")
+        with db.session() as session:
+            assistants = session.query(Assistant).filter_by(is_active=True).all()
+            print(f" Отримані асистенти: {assistants}")
+            form.assistant.choices = [(a.id, a.assistant_name) for a in assistants]
+
+    def create_form(self, obj=None):
+        """Цей метод потрібен для створення нових записів (на відміну від on_form_prefill)"""
+        form = super(PromptsAdmin, self).create_form(obj)
+        with db.session() as session:
+            assistants = session.query(Assistant).filter_by(is_active=True).all()
+            print(f" Отримані асистенти для створення: {assistants}")
+            form.assistant.choices = [(a.id, a.assistant_name) for a in assistants]
+        return form
 
     def __init__(self, *args, **kwargs):
         super(PromptsAdmin, self).__init__(*args, **kwargs)
