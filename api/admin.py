@@ -2,8 +2,9 @@ from flask_admin.contrib.sqla import ModelView
 from flask import request, redirect, url_for
 from flask_admin import BaseView, expose
 from flask_admin.contrib.sqla.fields import QuerySelectField
+from flask_admin.form import Select2Widget
 from flask_login import current_user
-from wtforms import BooleanField
+from wtforms import BooleanField, SelectField
 from database import SessionLocal
 
 from api.openai.trancription import AssistanceHandlerOpenAI, client
@@ -74,8 +75,8 @@ class AssistantAdminView(ModelView):
                 assistant=None,
                 instructions=None,
                 message=None,
-                system_content = str("Test"),
-                promt_type = str("Test")
+                system_content=str("Test"),
+                promt_type=str("Test")
             )
             assistant = openai_helper.create_assistant(
                 name=model.assistant_name,
@@ -92,10 +93,13 @@ class AssistantAdminView(ModelView):
 
 class PromptsAdmin(ModelView):
     form_extra_fields = {
-        "assistant": QuerySelectField(
+        "assistant": SelectField(
             "Assistant",
-            query_factory=lambda: Assistant.query.all(),
-            get_label="assistant_name",
-            allow_blank=False,
+            choices=[],
+            coerce=int,
+            widget=Select2Widget()
         )
     }
+
+    def on_form_prefill(self, form, id):
+        form.assistant.choices = [(a.id, a.assistant_name) for a in Assistant.query.all()]

@@ -13,8 +13,7 @@ logger = logging.getLogger(__name__)
 def has_permission(func):
     @wraps(func)
     def wrapper(self, *args, **kwargs):
-        # Отримуємо manager_id з позиційних або ключових аргументів
-        manager_id = kwargs.get("manager_id")  # З ключових аргументів
+        manager_id = kwargs.get("manager_id")
         if manager_id is None and len(args) > 2:
             manager_id = args[2]
 
