@@ -9,10 +9,10 @@ class Config:
     CSRF_ENABLED = True
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'you-will-never-guess'
     SQLALCHEMY_DATABASE_URI = os.environ.get('SQLALCHEMY_DATABASE_URI')
-    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or 'you-will-never-guess'
-    JWT_TOKEN_LOCATION = ['headers']
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     DEBUG = True
+    CELERY_BROKER_URL = 'redis://redis:6379/0'
+    CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
 
 
 class ProductionConfig(Config):

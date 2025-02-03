@@ -9,7 +9,6 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-
     environment:
       - FLASK_APP=app.py
       - FLASK_ENV=development
@@ -38,6 +37,23 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  worker:
+    build:
+      context: .
+    hostname: worker
+    entrypoint: celery
+    command: -A app.celery worker --loglevel=info
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+      - flask-app
+    restart: always
     networks:
       - app-network
 

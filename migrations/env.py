@@ -9,7 +9,7 @@ from alembic import context
 # access to the values within the .ini file in use.
 config = context.config
 
-# Interpret the config file for Python logging.
+# Interpret the redis_config file for Python logging.
 # This line sets up loggers basically.
 fileConfig(config.config_file_name)
 logger = logging.getLogger('alembic.env')
@@ -39,9 +39,9 @@ def get_engine_url():
 config.set_main_option('sqlalchemy.url', get_engine_url())
 target_db = current_app.extensions['migrate'].db
 
-# other values from the config, defined by the needs of env.py,
+# other values from the redis_config, defined by the needs of env.py,
 # can be acquired:
-# my_important_option = config.get_main_option("my_important_option")
+# my_important_option = redis_config.get_main_option("my_important_option")
 # ... etc.
 
 

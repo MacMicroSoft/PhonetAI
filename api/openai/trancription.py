@@ -35,29 +35,6 @@ class AssistanceHandlerOpenAI(AssistantEventHandler):
         self._assistant_input = message or None
         self._thread = None
 
-    @staticmethod
-    def transcriptions(client: OpenAI, audio_file_mp3_path: str) -> str:
-        """
-        Use transcription to get text from mp3 for analyse in assistant.
-        return transcription text
-        """
-        try:
-            with open(audio_file_mp3_path, "rb") as audio_file_mp3:
-                transcription = client.audio.transcriptions.create(
-                    model="whisper-1",
-                    file=audio_file_mp3
-                )
-                if transcription:
-                    return transcription.text
-
-        except FileNotFoundError as f:
-            logger.error(f"Error: File not found. Details: {f}")
-        except IOError as o:
-            logger.error(f"Error: I/O error occurred. Details: {o}")
-        except Exception as e:
-            logger.error(f"Unexpected error: {type(e).__name__} - {e}")
-            raise e
-
     def create_assistant(self, name, desc, model):
         """ Create assistant (DON'T USE NOW, Mby in future)"""
         assistant = self.__client.beta.assistants.create(
@@ -67,13 +44,37 @@ class AssistanceHandlerOpenAI(AssistantEventHandler):
         )
         return assistant
 
+    def delete_assistant(self, assistant_id):
+        try:
+            assistant = self.__client.beta.assistants.delete(
+                assistant_id=assistant_id
+            )
+            if assistant:
+                return Response("Assistant deleted", 204)
+            else:
+                return Response("Assistant not found", 404)
+        except Exception as e:
+            return "Unexpected error occurred. Details: " + str(e)
+
+    def update_assistant_promt(self, assistant_id, system_promt):
+        assistant = self.__client.beta.assistants.update(
+            assistant_id=assistant_id,
+            instructions=system_promt,
+        )
+
+    def update_assistant(self, assistant_id, name, desc, model):
+        assistant = self.__client.beta.assistants.update(
+            assistant_id=assistant_id,
+            name=name,
+            description=desc,
+            model=model,
+        )
+
     def change_assistant_system_promts(self, assistant_id):
         assistant = self.__client.beta.assistants.update(
             assistant_id=assistant_id,
             instructions=self._instructions,
         )
-
-        pass
 
     def create_assistant_thread(self) -> Optional[Thread]:
         """Create new thread."""
@@ -113,6 +114,20 @@ class AssistanceHandlerOpenAI(AssistantEventHandler):
             return stream
 
 
+def get_first_active_assistant():
+    with SessionLocal() as db:
+        # Query only the necessary fields (assistant_id and message_promt) from the Assistant table
+        result = db.query(Assistant.assistant_id, Assistant.message_promt) \
+            .filter(Assistant.is_active == True) \
+            .first()
+
+        if result:
+            return {
+                "assistant_id": result[0],
+                "message_promt": result[1]
+            }
+        return None
+
 @staticmethod
 def transcriptions(audio_file_mp3_path: str):
     """
@@ -136,23 +151,6 @@ def transcriptions(audio_file_mp3_path: str):
         logger.error(f"Unexpected error: {type(e).__name__} - {e}")
         raise e
 
-
-def get_first_active_assistant():
-    with SessionLocal() as db:
-        # Query only the necessary fields (assistant_id and message_promt) from the Assistant table
-        result = db.query(Assistant.assistant_id, Assistant.message_promt) \
-                   .filter(Assistant.is_active == True) \
-                   .first()
-
-        if result:
-            # Return only the assistant_id and message_promt
-            return {
-                "assistant_id": result[0],
-                "message_promt": result[1]
-            }
-        return None
-
-
 def assistant_start(transcrip_text: str, crm_data_json: dict, crm_manager):
     """Start the assistant process with an audio file."""
     assistant_check = get_first_active_assistant()
@@ -164,8 +162,6 @@ def assistant_start(transcrip_text: str, crm_data_json: dict, crm_manager):
             assistant=assistant_id,
             instructions=message_promt,
             message=str(transcrip_text),
-            system_content="s",
-            promt_type="t"
         )
 
         handler.create_assistant_thread()
@@ -185,7 +181,7 @@ def assistant_start(transcrip_text: str, crm_data_json: dict, crm_manager):
                              }
 
             save_analyse_data_to_database(analysed_json)
-            crm_manager.post_send_data_to_crm(lead_id=crm_data_json["lead_element_id"], content=str(gpt_answer))
+            # crm_manager.post_send_data_to_crm(lead_id=crm_data_json["lead_element_id"], content=str(gpt_answer))
         else:
             logger.error("Assistant run failed.")
 
