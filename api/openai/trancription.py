@@ -181,7 +181,7 @@ def assistant_start(transcrip_text: str, crm_data_json: dict, crm_manager):
                              }
 
             save_analyse_data_to_database(analysed_json)
-            # crm_manager.post_send_data_to_crm(lead_id=crm_data_json["lead_element_id"], content=str(gpt_answer))
+            crm_manager.post_send_data_to_crm(lead_id=crm_data_json["lead_element_id"], content=str(gpt_answer))
         else:
             logger.error("Assistant run failed.")
 

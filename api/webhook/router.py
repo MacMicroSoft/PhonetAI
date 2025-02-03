@@ -22,6 +22,9 @@ def get_app():
     return app
 
 
+ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
+
+
 @webhook_route.route('/como/crm/', methods=['POST'])
 def webhook_from_CRM():
     try:
@@ -60,8 +63,9 @@ def process_webhook_data(data):
             logger.info("Отримано дані: %s, %s, %s, %s", audio_filename, audio_url, lead_id, url_domain)
 
             try:
-                crm_manager = ApiCRMManager(url_domain, access_token=os.getenv('ACCESS_TOKEN'))
-                lead_status_str = crm_manager.status_info(lead_id).get('name')
+                crm_manager: ApiCRMManager = ApiCRMManager(url_domain, access_token=ACCESS_TOKEN)
+                logger.info(ACCESS_TOKEN, "TOKEN")
+                lead_status_str: str = crm_manager.status_info(lead_id).get('name')
                 if lead_status_str:
                     logger.info("Lead status: %s", lead_status_str)
                 else:
