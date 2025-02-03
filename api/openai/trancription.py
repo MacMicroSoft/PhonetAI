@@ -117,7 +117,7 @@ class AssistanceHandlerOpenAI(AssistantEventHandler):
 def get_first_active_assistant():
     with SessionLocal() as db:
         # Query only the necessary fields (assistant_id and message_promt) from the Assistant table
-        result = db.query(Assistant.assistant_id, Assistant.message_promt) \
+        result = db.query(Assistant.assistant_id, Assistant.message_prompt) \
             .filter(Assistant.is_active == True) \
             .first()
 
