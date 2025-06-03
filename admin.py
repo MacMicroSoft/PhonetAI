@@ -72,13 +72,6 @@ class PhonetLeadsAdminView(SecureModelView):
     form_columns = ('phonet_id', 'leads_id', 'last_update')
 
 
-# class PromptsAdminView(InlineFormAdmin):
-#     form_columns = ["prompt_type", "content", "is_active"]
-#     form_extra_fields = {
-#         'is_active': BooleanField('Active', default=True)
-#     }
-#
-#
 class AssistantAdminView(ModelView):
     column_list = ["id", "assistant_name", "model", "description", "message_prompt", "is_active"]
     form_columns = ["assistant_name", "model", "description", "message_prompt", "is_active"]
@@ -141,7 +134,7 @@ class PromptsAdmin(ModelView):
         "assistant": SelectField(
             "Assistant",
             coerce=int,  # Convert selected assistant to integer
-            widget=Select2Widget()  # Use a select2 widget for better UI
+            widget=Select2Widget() 
         ),
     }
 

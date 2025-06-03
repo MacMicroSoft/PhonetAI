@@ -1,5 +1,5 @@
 import logging
-from sqlalchemy import select
+
 from sqlalchemy.orm import Session
 from models import Integrations, Manager, Leads, Phonet, PhonetLeads, Analyzes
 from database import SessionLocal
@@ -9,10 +9,10 @@ logger = logging.getLogger(__name__)
 
 def save_to_database(data: dict) -> dict:
     logger.info(
-        "Start decoding data",
+        "Start saving incoming data to database",
         extra={
             "status_code": "100",
-            "status_message": "DATA",
+            "status_message": "Start DB save",
             "operation_type": "WEBHOOK",
             "service": "FLASK",
         },
@@ -42,16 +42,36 @@ def save_to_database(data: dict) -> dict:
             leads_data = data.get("Leads")
             if leads_data:
                 if not manager:
+                    logger.error(
+                        "Missing manager while saving lead",
+                        extra={
+                            "status_code": "400",
+                            "status_message": "Manager missing",
+                            "operation_type": "WEBHOOK",
+                            "service": "FLASK",
+                        },
+                    )
                     raise ValueError("Manager is required but not found")
+
                 if not integration:
+                    logger.error(
+                        "Missing integration while saving lead",
+                        extra={
+                            "status_code": "400",
+                            "status_message": "Integration missing",
+                            "operation_type": "WEBHOOK",
+                            "service": "FLASK",
+                        },
+                    )
                     raise ValueError("Integration is required but not found")
 
                 leads_data["manager_id"] = manager.id
                 leads_data["integration_id"] = integration.id
-
                 leads = Leads(**leads_data)
                 db.add(leads)
                 db.commit()
+            else:
+                leads = None
 
             phonet_data = data.get("Phonet")
             if phonet_data:
@@ -62,50 +82,73 @@ def save_to_database(data: dict) -> dict:
                 phonet_leads_data = data.get("PhonetLeads")
                 if phonet_leads_data:
                     if not leads:
+                        logger.error(
+                            "Missing lead while saving PhonetLeads",
+                            extra={
+                                "status_code": "400",
+                                "status_message": "Leads missing",
+                                "operation_type": "WEBHOOK",
+                                "service": "FLASK",
+                            },
+                        )
                         raise ValueError("Leads is required but not found")
 
                     phonet_leads_data["phonet_id"] = phonet.id
                     phonet_leads_data["leads_id"] = leads.id
-
                     phonet_leads = PhonetLeads(**phonet_leads_data)
                     db.add(phonet_leads)
                     db.commit()
+            else:
+                phonet = None
 
             logger.info(
-                "Successfully saved data to database",
+                "Data saved to database successfully",
                 extra={
-                    "status_code": "100",
-                    "status_message": "DATA",
+                    "status_code": "200",
+                    "status_message": "DB save complete",
                     "operation_type": "WEBHOOK",
                     "service": "FLASK",
                 },
             )
-            return {"manager_id": manager.id,
-                    "lead_id": leads.id,
-                    "lead_element_id": leads.element_id,
-                    "phonet_id": phonet.id
-                    }
+
+            return {
+                "manager_id": manager.id if manager else None,
+                "lead_id": leads.id if leads else None,
+                "lead_element_id": leads.element_id if leads else None,
+                "phonet_id": phonet.id if phonet else None,
+            }
 
     except Exception as e:
         logger.error(
-            "Error saving to database",
+            "Exception during saving to database",
+            exc_info=True,
             extra={
                 "status_code": "500",
-                "status_message": "SERVER",
+                "status_message": "Database save error",
                 "operation_type": "WEBHOOK",
                 "service": "FLASK",
-                "error": str(e),
             },
         )
+        raise
 
 
 def save_analyse_data_to_database(data: dict) -> None:
+    logger.info(
+        "Start saving analysis data",
+        extra={
+            "status_code": "100",
+            "status_message": "Start analysis DB save",
+            "operation_type": "WEBHOOK",
+            "service": "FLASK",
+        },
+    )
+
     try:
         analyse_data = {
             "lead_id": data.get("lead_id"),
             "audio_text": data.get("audio_text"),
             "analysed_text": data.get("analysed_text"),
-            "is_analysed": data.get("is_analysed")
+            "is_analysed": data.get("is_analysed"),
         }
 
         with SessionLocal() as db:
@@ -113,9 +156,28 @@ def save_analyse_data_to_database(data: dict) -> None:
             db.add(analysed_data)
             db.commit()
 
-    except Exception as e:
-        logger.error(f"Error saving analysed data: {e}")
-        db.rollback()
+        logger.info(
+            "Analysis data saved successfully",
+            extra={
+                "status_code": "200",
+                "status_message": "Analysis data saved",
+                "operation_type": "WEBHOOK",
+                "service": "FLASK",
+            },
+        )
+
+    except Exception:
+        logger.error(
+            "Error saving analysed data",
+            exc_info=True,
+            extra={
+                "status_code": "500",
+                "status_message": "Analysis DB save error",
+                "operation_type": "WEBHOOK",
+                "service": "FLASK",
+            },
+        )
+        raise
 
 
 def get_created_lead_id():

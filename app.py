@@ -1,43 +1,61 @@
-import click
 import logging
-from flask import Flask, redirect, url_for, request, Blueprint, render_template
+import os
+
+import click
+from dotenv import load_dotenv
+from flask import Blueprint, Flask, redirect, render_template, request, url_for
 from flask.cli import with_appcontext
 from flask_admin import Admin, AdminIndexView, expose
-from flask_login import LoginManager, login_user, logout_user, login_required
+from flask_login import LoginManager, login_required, login_user, logout_user
 from flask_migrate import Migrate
 from flask_restful import Api
 from werkzeug.security import check_password_hash
 
-from admin import IntegrationsAdminView, ManagerAdminView, LeadsAdminView, AnalysesAdminView, \
-    PhonetAdminView, PhonetLeadsAdminView, AssistantAdminView, PromptsAdmin
-from config import Config
-from celery_settings import configure_celery, celery
-from models import db, User, Integrations, Manager, Leads, Phonet, Analyzes, PhonetLeads, Assistant, Prompts
+from admin import (
+    AnalysesAdminView,
+    AssistantAdminView,
+    IntegrationsAdminView,
+    LeadsAdminView,
+    ManagerAdminView,
+    PhonetAdminView,
+    PhonetLeadsAdminView,
+    PromptsAdmin,
+)
 from api.webhook.router import webhook_route
-
-# Flask redis_config
-app = Flask(__name__)
-
-# Use Config class for configuration
-app.config.from_object(Config)
-
-# Celery configuration
-app.config.update(
-    CELERY_BROKER_URL='redis://redis:6379/0',
-    CELERY_RESULT_BACKEND='redis://redis:6379/0'
+from celery_settings import celery, configure_celery
+from config import Config
+from models import (
+    Analyzes,
+    Assistant,
+    Integrations,
+    Leads,
+    Manager,
+    Phonet,
+    PhonetLeads,
+    Prompts,
+    User,
+    db,
 )
 
-# Initialize Flask extensions
+load_dotenv()
+
+app = Flask(__name__)
+
+app.config.from_object(Config)
+
+app.config.update(
+    CELERY_BROKER_URL=os.getenv('CELERY_BROKER_URL', 'redis://redis:6379/0'),
+    CELERY_RESULT_BACKEND=os.getenv('CELERY_RESULT_BACKEND', 'redis://redis:6379/0')
+)
+
 db.init_app(app)
 migrate = Migrate(app, db)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
-# Celery setup
 
 configure_celery(app)
 
-# API and Blueprints
 api_bp = Blueprint('api', __name__)
 api = Api(api_bp)
 
@@ -63,13 +81,11 @@ admin.add_view(AssistantAdminView(Assistant, db.session))
 admin.add_view(PromptsAdmin(Prompts, db.session))
 
 
-# User loader for Flask-Login
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
 
-# Authentication routes
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -94,7 +110,6 @@ def logout():
     return redirect(url_for('login'))
 
 
-# CLI command to create superuser
 @app.cli.command('createsuperuser')
 @click.option('--username', prompt=True, help='The username for the superuser.')
 @click.option('--email', prompt=True, help='The email for the superuser.')
